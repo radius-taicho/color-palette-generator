@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Palette, Settings, Info } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Palette, Settings, Info, RefreshCw } from 'lucide-react';
 import { ColorPalette } from '../types/color';
 import { generatePaletteFromImage } from '../utils/imageUtils';
 import ImageUploader from './ImageUploader';
@@ -14,23 +14,55 @@ export default function ColorPaletteGenerator() {
   const [savedPalettes, setSavedPalettes] = useState<ColorPalette[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastUploadedFile, setLastUploadedFile] = useState<File | null>(null);
+
+  // 設定変更時の処理
+  const handleColorCountChange = useCallback(async (newCount: number) => {
+    setColorCount(newCount);
+    
+    // 既存のパレットがある場合は新しい設定で再生成
+    if (currentPalette && lastUploadedFile) {
+      setIsGenerating(true);
+      setError(null);
+      
+      try {
+        const { colors, imageUrl: processedImageUrl } = await generatePaletteFromImage(lastUploadedFile, newCount);
+        
+        const updatedPalette: ColorPalette = {
+          ...currentPalette,
+          colors,
+          name: `${lastUploadedFile.name.split('.')[0]} の色 (${newCount}色)`,
+          imageUrl: processedImageUrl
+        };
+        
+        setCurrentPalette(updatedPalette);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'パレットの再生成に失敗しました');
+      } finally {
+        setIsGenerating(false);
+      }
+    }
+  }, [currentPalette, lastUploadedFile]);
 
   const handleImageUploaded = useCallback(async (imageUrl: string, file: File) => {
     setIsGenerating(true);
     setError(null);
+    setLastUploadedFile(file);
     
     try {
       const { colors, imageUrl: processedImageUrl } = await generatePaletteFromImage(file, colorCount);
       
       const palette: ColorPalette = {
         id: Date.now().toString(),
-        name: `${file.name.split('.')[0]} の色`,
+        name: `${file.name.split('.')[0]} の色 (${colorCount}色)`,
         colors,
         createdAt: new Date(),
         imageUrl: processedImageUrl
       };
       
       setCurrentPalette(palette);
+      // 設定パネルを自動で閉じる
+      setShowSettings(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'パレットの生成に失敗しました');
     } finally {
@@ -59,11 +91,37 @@ export default function ColorPaletteGenerator() {
 
   const handleReset = useCallback(() => {
     setCurrentPalette(null);
+    setLastUploadedFile(null);
     setError(null);
   }, []);
 
+  const handleRegenerateWithNewSettings = useCallback(async () => {
+    if (!lastUploadedFile) return;
+    
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      const { colors, imageUrl: processedImageUrl } = await generatePaletteFromImage(lastUploadedFile, colorCount);
+      
+      const palette: ColorPalette = {
+        id: Date.now().toString(),
+        name: `${lastUploadedFile.name.split('.')[0]} の色 (${colorCount}色)`,
+        colors,
+        createdAt: new Date(),
+        imageUrl: processedImageUrl
+      };
+      
+      setCurrentPalette(palette);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'パレットの再生成に失敗しました');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [lastUploadedFile, colorCount]);
+
   // 初期化時にローカルストレージからパレットを読み込み
-  React.useEffect(() => {
+  useEffect(() => {
     try {
       const saved = localStorage.getItem('colorPalettes');
       if (saved) {
@@ -95,14 +153,38 @@ export default function ColorPaletteGenerator() {
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* 現在の設定表示 */}
+              <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>{colorCount}色で抽出</span>
+                </div>
+              </div>
+              
               {/* 設定ボタン */}
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                className={`p-2 transition-colors ${
+                  showSettings 
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
                 title="設定"
               >
                 <Settings className="h-5 w-5" />
               </button>
+              
+              {/* 再生成ボタン */}
+              {currentPalette && lastUploadedFile && (
+                <button
+                  onClick={handleRegenerateWithNewSettings}
+                  disabled={isGenerating}
+                  className="p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors disabled:opacity-50"
+                  title="現在の設定で再生成"
+                >
+                  <RefreshCw className={`h-5 w-5 ${isGenerating ? 'animate-spin' : ''}`} />
+                </button>
+              )}
               
               {/* リセットボタン */}
               {currentPalette && (
@@ -120,29 +202,52 @@ export default function ColorPaletteGenerator() {
 
       {/* 設定パネル */}
       {showSettings && (
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-3">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  抽出する色の数:
-                </label>
-                <select
-                  value={colorCount}
-                  onChange={(e) => setColorCount(parseInt(e.target.value))}
-                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {[3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                    <option key={num} value={num}>{num}色</option>
-                  ))}
-                </select>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-3">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    抽出する色の数:
+                  </label>
+                  <select
+                    value={colorCount}
+                    onChange={(e) => handleColorCountChange(parseInt(e.target.value))}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {[3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                      <option key={num} value={num}>{num}色</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                  <Info className="h-4 w-4" />
+                  <span>多い色数ほど詳細な分析が可能ですが、処理時間が長くなります</span>
+                </div>
               </div>
               
-              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <Info className="h-4 w-4" />
-                <span>多い色数ほど詳細な分析が可能ですが、処理時間が長くなります</span>
-              </div>
+              {/* 設定パネル閉じるボタン */}
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                title="設定パネルを閉じる"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
+            
+            {/* 設定変更時の説明 */}
+            {currentPalette && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>設定を変更すると、既存のパレットが新しい設定で自動再生成されます</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
