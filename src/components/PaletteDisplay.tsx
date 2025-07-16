@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Download, Share2, Save, Palette, Grid, List, Settings } from 'lucide-react';
 import { PaletteDisplayProps } from '../types/color';
-import { exportToCss, exportToJson, copyToClipboard } from '../utils/colorUtils';
+import { exportToCss, exportToJson, copyToClipboard, isLightColor } from '../utils/colorUtils';
 import ColorCard from './ColorCard';
 
 export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisplayProps) {
@@ -252,20 +252,105 @@ ${palette.colors.map((color, index) => `  --color-${index + 1}: ${color.hex};`).
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               デザインプレビュー
             </h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* グラデーション例 */}
               <div
-                className="h-20 rounded-lg"
+                className="h-20 rounded-lg shadow-sm"
                 style={{
                   background: `linear-gradient(135deg, ${palette.colors.map(c => c.hex).join(', ')})`
                 }}
               />
               
-              {/* カード例 */}
-              <div className="h-20 rounded-lg flex items-center justify-center" style={{ backgroundColor: palette.colors[0]?.hex }}>
-                <div className="text-center" style={{ color: palette.colors[1]?.hex }}>
-                  <div className="text-sm font-medium">サンプルカード</div>
-                  <div className="text-xs">カラーパレット</div>
+              {/* カード例 1 */}
+              <div 
+                className="h-20 rounded-lg flex items-center justify-center shadow-sm relative overflow-hidden" 
+                style={{ backgroundColor: palette.colors[0]?.hex }}
+              >
+                <div className="text-center z-10">
+                  <div 
+                    className="text-sm font-medium"
+                    style={{ 
+                      color: isLightColor(palette.colors[0]?.hex || '#000000') ? '#000000' : '#FFFFFF'
+                    }}
+                  >
+                    サンプルカード
+                  </div>
+                  <div 
+                    className="text-xs opacity-75"
+                    style={{ 
+                      color: isLightColor(palette.colors[0]?.hex || '#000000') ? '#000000' : '#FFFFFF'
+                    }}
+                  >
+                    カラーパレット
+                  </div>
+                </div>
+              </div>
+              
+              {/* カード例 2 - 複数色使用 */}
+              <div className="h-20 rounded-lg shadow-sm overflow-hidden">
+                <div className="flex h-full">
+                  <div 
+                    className="flex-1 flex items-center justify-center"
+                    style={{ backgroundColor: palette.colors[0]?.hex }}
+                  >
+                    <div 
+                      className="text-xs font-medium"
+                      style={{ 
+                        color: isLightColor(palette.colors[0]?.hex || '#000000') ? '#000000' : '#FFFFFF'
+                      }}
+                    >
+                      主色
+                    </div>
+                  </div>
+                  <div 
+                    className="flex-1 flex items-center justify-center"
+                    style={{ backgroundColor: palette.colors[1]?.hex || palette.colors[0]?.hex }}
+                  >
+                    <div 
+                      className="text-xs font-medium"
+                      style={{ 
+                        color: isLightColor(palette.colors[1]?.hex || palette.colors[0]?.hex || '#000000') ? '#000000' : '#FFFFFF'
+                      }}
+                    >
+                      副色
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* 配色パターン例 */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              配色パターン
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              {/* モノクロ調 */}
+              <div className="space-y-2">
+                <div className="text-xs text-gray-500">モノクロ調</div>
+                <div className="flex h-6 rounded overflow-hidden">
+                  {palette.colors.slice(0, 3).map((color, index) => (
+                    <div
+                      key={index}
+                      className="flex-1 opacity-60"
+                      style={{ backgroundColor: color.hex }}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              {/* ビビッド調 */}
+              <div className="space-y-2">
+                <div className="text-xs text-gray-500">ビビッド調</div>
+                <div className="flex h-6 rounded overflow-hidden">
+                  {palette.colors.slice(0, 3).map((color, index) => (
+                    <div
+                      key={index}
+                      className="flex-1 saturate-150"
+                      style={{ backgroundColor: color.hex }}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
