@@ -16,45 +16,54 @@ export default function ColorPaletteGenerator() {
   const [error, setError] = useState<string | null>(null);
   const [lastUploadedFile, setLastUploadedFile] = useState<File | null>(null);
 
-  // 設定変更時の処理
-  const handleColorCountChange = useCallback(async (newCount: number) => {
+  // 設定変更時の処理を改善
+  const handleColorCountChange = useCallback((newCount: number) => {
+    console.log('Color count changed to:', newCount); // デバッグ用
     setColorCount(newCount);
     
     // 既存のパレットがある場合は新しい設定で再生成
     if (currentPalette && lastUploadedFile) {
-      setIsGenerating(true);
-      setError(null);
-      
-      try {
-        const { colors, imageUrl: processedImageUrl } = await generatePaletteFromImage(lastUploadedFile, newCount);
+      // 少し遅延を入れて状態が確実に更新されるようにする
+      setTimeout(async () => {
+        setIsGenerating(true);
+        setError(null);
         
-        const updatedPalette: ColorPalette = {
-          ...currentPalette,
-          colors,
-          name: `${lastUploadedFile.name.split('.')[0]} の色 (${newCount}色)`,
-          imageUrl: processedImageUrl
-        };
-        
-        setCurrentPalette(updatedPalette);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'パレットの再生成に失敗しました');
-      } finally {
-        setIsGenerating(false);
-      }
+        try {
+          const { colors, imageUrl: processedImageUrl } = await generatePaletteFromImage(lastUploadedFile, newCount);
+          
+          const updatedPalette: ColorPalette = {
+            ...currentPalette,
+            colors,
+            name: `${lastUploadedFile.name.split('.')[0]} の色 (${newCount}色)`,
+            imageUrl: processedImageUrl
+          };
+          
+          setCurrentPalette(updatedPalette);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'パレットの再生成に失敗しました');
+        } finally {
+          setIsGenerating(false);
+        }
+      }, 100);
     }
   }, [currentPalette, lastUploadedFile]);
 
+  // 画像アップロード処理を改善
   const handleImageUploaded = useCallback(async (imageUrl: string, file: File) => {
+    // 現在のcolorCountの値を確実に使用するために、最新の状態を取得
+    const currentColorCount = colorCount;
+    console.log('Image uploaded with colorCount:', currentColorCount); // デバッグ用
+    
     setIsGenerating(true);
     setError(null);
     setLastUploadedFile(file);
     
     try {
-      const { colors, imageUrl: processedImageUrl } = await generatePaletteFromImage(file, colorCount);
+      const { colors, imageUrl: processedImageUrl } = await generatePaletteFromImage(file, currentColorCount);
       
       const palette: ColorPalette = {
         id: Date.now().toString(),
-        name: `${file.name.split('.')[0]} の色 (${colorCount}色)`,
+        name: `${file.name.split('.')[0]} の色 (${currentColorCount}色)`,
         colors,
         createdAt: new Date(),
         imageUrl: processedImageUrl
@@ -68,7 +77,7 @@ export default function ColorPaletteGenerator() {
     } finally {
       setIsGenerating(false);
     }
-  }, [colorCount]);
+  }, [colorCount]); // colorCountを依存関係に追加
 
   const handleSavePalette = useCallback(() => {
     if (!currentPalette) return;
@@ -132,6 +141,11 @@ export default function ColorPaletteGenerator() {
     }
   }, []);
 
+  // デバッグ用: colorCountの変更を監視
+  useEffect(() => {
+    console.log('Current colorCount:', colorCount);
+  }, [colorCount]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
       {/* ヘッダー */}
@@ -153,10 +167,10 @@ export default function ColorPaletteGenerator() {
             </div>
             
             <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-              {/* 現在の設定表示 - モバイルでは省略形 */}
-              <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              {/* 現在の設定表示 - より目立つように */}
+              <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="whitespace-nowrap">{colorCount}色</span>
+                <span className="whitespace-nowrap font-medium text-blue-700 dark:text-blue-300">{colorCount}色</span>
               </div>
               
               {/* 設定ボタン */}
@@ -211,7 +225,11 @@ export default function ColorPaletteGenerator() {
                   </label>
                   <select
                     value={colorCount}
-                    onChange={(e) => handleColorCountChange(parseInt(e.target.value))}
+                    onChange={(e) => {
+                      const newCount = parseInt(e.target.value);
+                      console.log('Select changed to:', newCount); // デバッグ用
+                      handleColorCountChange(newCount);
+                    }}
                     className="px-2 py-1 sm:px-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[80px]"
                   >
                     {[3, 4, 5, 6, 7, 8, 9, 10].map(num => (
@@ -222,7 +240,7 @@ export default function ColorPaletteGenerator() {
                 
                 <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                   <Info className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm">多い色数ほど詳細な分析が可能ですが、処理時間が長くなります</span>
+                  <span className="text-xs sm:text-sm">設定を変更すると即座に反映されます</span>
                 </div>
               </div>
               
@@ -243,6 +261,15 @@ export default function ColorPaletteGenerator() {
                   <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
                   <span>設定を変更すると、既存のパレットが新しい設定で自動再生成されます</span>
                 </div>
+              </div>
+            )}
+            
+            {/* デバッグ情報 - 開発時のみ表示 */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-xs">
+                <span className="text-yellow-700 dark:text-yellow-300">
+                  デバッグ: 現在の色数設定 = {colorCount}
+                </span>
               </div>
             )}
           </div>
@@ -276,9 +303,19 @@ export default function ColorPaletteGenerator() {
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-3 sm:mb-4">
                 🎨 画像から色を抽出しましょう
               </h2>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6 sm:mb-8 px-4">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 px-4">
                 お気に入りの画像をアップロードして、美しいカラーパレットを自動生成します
               </p>
+              
+              {/* 現在の設定表示 */}
+              <div className="mb-4 sm:mb-6">
+                <div className="inline-flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-full">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                    現在の設定: {colorCount}色で抽出
+                  </span>
+                </div>
+              </div>
               
               <ImageUploader 
                 onImageUploaded={handleImageUploaded}
@@ -330,9 +367,9 @@ export default function ColorPaletteGenerator() {
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
                     <span className="text-blue-600 dark:text-blue-400 font-bold text-sm sm:text-base">1</span>
                   </div>
-                  <h4 className="font-medium text-gray-800 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">画像をアップロード</h4>
+                  <h4 className="font-medium text-gray-800 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">設定を調整</h4>
                   <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
-                    JPEG、PNG、GIFなどの画像ファイルをドラッグ&ドロップまたはクリックでアップロード
+                    歯車アイコンから抽出する色の数を3-10色で設定
                   </p>
                 </div>
                 
@@ -340,9 +377,9 @@ export default function ColorPaletteGenerator() {
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
                     <span className="text-green-600 dark:text-green-400 font-bold text-sm sm:text-base">2</span>
                   </div>
-                  <h4 className="font-medium text-gray-800 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">色を抽出</h4>
+                  <h4 className="font-medium text-gray-800 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">画像をアップロード</h4>
                   <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
-                    AIが画像から主要な色を自動的に抽出し、美しいパレットを生成
+                    JPEG、PNG、GIFなどの画像ファイルをドラッグ&ドロップまたはクリックでアップロード
                   </p>
                 </div>
                 
