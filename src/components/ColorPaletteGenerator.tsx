@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Palette, Settings, Info, RefreshCw } from 'lucide-react';
+import { Palette, Settings, Info, RefreshCw, X } from 'lucide-react';
 import { ColorPalette } from '../types/color';
 import { generatePaletteFromImage } from '../utils/imageUtils';
 import ImageUploader from './ImageUploader';
@@ -136,42 +136,40 @@ export default function ColorPaletteGenerator() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
       {/* ヘッダー */}
       <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-                <Palette className="h-6 w-6 text-white" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+              <div className="p-1.5 sm:p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex-shrink-0">
+                <Palette className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base sm:text-xl font-bold text-gray-800 dark:text-white truncate">
                   Color Palette Generator
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden sm:block">
                   画像から美しいカラーパレットを生成
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              {/* 現在の設定表示 */}
-              <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>{colorCount}色で抽出</span>
-                </div>
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+              {/* 現在の設定表示 - モバイルでは省略形 */}
+              <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="whitespace-nowrap">{colorCount}色</span>
               </div>
               
               {/* 設定ボタン */}
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className={`p-2 transition-colors ${
+                className={`p-1.5 sm:p-2 transition-colors ${
                   showSettings 
                     ? 'text-blue-600 dark:text-blue-400' 
                     : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                 }`}
                 title="設定"
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               
               {/* 再生成ボタン */}
@@ -179,20 +177,21 @@ export default function ColorPaletteGenerator() {
                 <button
                   onClick={handleRegenerateWithNewSettings}
                   disabled={isGenerating}
-                  className="p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors disabled:opacity-50"
+                  className="p-1.5 sm:p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors disabled:opacity-50"
                   title="現在の設定で再生成"
                 >
-                  <RefreshCw className={`h-5 w-5 ${isGenerating ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${isGenerating ? 'animate-spin' : ''}`} />
                 </button>
               )}
               
-              {/* リセットボタン */}
+              {/* リセットボタン - モバイルでは省略形 */}
               {currentPalette && (
                 <button
                   onClick={handleReset}
-                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200"
+                  className="px-2 py-1 sm:px-4 sm:py-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs sm:text-sm transition-colors duration-200"
                 >
-                  リセット
+                  <span className="hidden sm:inline">リセット</span>
+                  <span className="sm:hidden">×</span>
                 </button>
               )}
             </div>
@@ -203,17 +202,17 @@ export default function ColorPaletteGenerator() {
       {/* 設定パネル */}
       {showSettings && (
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-3">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-6">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                     抽出する色の数:
                   </label>
                   <select
                     value={colorCount}
                     onChange={(e) => handleColorCountChange(parseInt(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-2 py-1 sm:px-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[80px]"
                   >
                     {[3, 4, 5, 6, 7, 8, 9, 10].map(num => (
                       <option key={num} value={num}>{num}色</option>
@@ -221,29 +220,27 @@ export default function ColorPaletteGenerator() {
                   </select>
                 </div>
                 
-                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                  <Info className="h-4 w-4" />
-                  <span>多い色数ほど詳細な分析が可能ですが、処理時間が長くなります</span>
+                <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <Info className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm">多い色数ほど詳細な分析が可能ですが、処理時間が長くなります</span>
                 </div>
               </div>
               
               {/* 設定パネル閉じるボタン */}
               <button
                 onClick={() => setShowSettings(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="self-end sm:self-auto p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 title="設定パネルを閉じる"
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
             
             {/* 設定変更時の説明 */}
             {currentPalette && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="mt-3 sm:mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center space-x-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
                   <span>設定を変更すると、既存のパレットが新しい設定で自動再生成されます</span>
                 </div>
               </div>
@@ -253,15 +250,15 @@ export default function ColorPaletteGenerator() {
       )}
 
       {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* エラー表示 */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-red-700 dark:text-red-300 font-medium">エラー</span>
+              <span className="text-red-700 dark:text-red-300 font-medium text-sm">エラー</span>
             </div>
-            <p className="text-red-600 dark:text-red-400 mt-1">{error}</p>
+            <p className="text-red-600 dark:text-red-400 mt-1 text-sm">{error}</p>
           </div>
         )}
 
@@ -273,13 +270,13 @@ export default function ColorPaletteGenerator() {
             onShare={handleSharePalette}
           />
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {/* 画像アップロード */}
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-3 sm:mb-4">
                 🎨 画像から色を抽出しましょう
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-8">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6 sm:mb-8 px-4">
                 お気に入りの画像をアップロードして、美しいカラーパレットを自動生成します
               </p>
               
@@ -291,21 +288,21 @@ export default function ColorPaletteGenerator() {
 
             {/* 保存済みパレット */}
             {savedPalettes.length > 0 && (
-              <div className="mt-12">
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
+              <div className="mt-8 sm:mt-12">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white mb-4 sm:mb-6">
                   📚 保存済みパレット
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {savedPalettes.slice(-6).map((palette) => (
                     <div
                       key={palette.id}
-                      className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                      className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
                       onClick={() => setCurrentPalette(palette)}
                     >
-                      <h4 className="font-medium text-gray-800 dark:text-white mb-2">
+                      <h4 className="font-medium text-gray-800 dark:text-white mb-2 text-sm sm:text-base truncate">
                         {palette.name}
                       </h4>
-                      <div className="flex h-6 rounded overflow-hidden">
+                      <div className="flex h-4 sm:h-6 rounded overflow-hidden">
                         {palette.colors.map((color, index) => (
                           <div
                             key={index}
@@ -324,37 +321,37 @@ export default function ColorPaletteGenerator() {
             )}
 
             {/* 使い方説明 */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-lg">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-gray-800 dark:text-white">
                 🚀 使い方
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">1</span>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold text-sm sm:text-base">1</span>
                   </div>
-                  <h4 className="font-medium text-gray-800 dark:text-white mb-2">画像をアップロード</h4>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <h4 className="font-medium text-gray-800 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">画像をアップロード</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                     JPEG、PNG、GIFなどの画像ファイルをドラッグ&ドロップまたはクリックでアップロード
                   </p>
                 </div>
                 
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-green-600 dark:text-green-400 font-bold">2</span>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                    <span className="text-green-600 dark:text-green-400 font-bold text-sm sm:text-base">2</span>
                   </div>
-                  <h4 className="font-medium text-gray-800 dark:text-white mb-2">色を抽出</h4>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <h4 className="font-medium text-gray-800 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">色を抽出</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                     AIが画像から主要な色を自動的に抽出し、美しいパレットを生成
                   </p>
                 </div>
                 
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-purple-600 dark:text-purple-400 font-bold">3</span>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                    <span className="text-purple-600 dark:text-purple-400 font-bold text-sm sm:text-base">3</span>
                   </div>
-                  <h4 className="font-medium text-gray-800 dark:text-white mb-2">活用する</h4>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <h4 className="font-medium text-gray-800 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">活用する</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                     CSS、JSON形式でエクスポートしたり、デザインプロジェクトで活用
                   </p>
                 </div>
@@ -365,13 +362,13 @@ export default function ColorPaletteGenerator() {
       </main>
 
       {/* フッター */}
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-8 sm:mt-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="text-center text-gray-600 dark:text-gray-400">
-            <p className="text-sm">
+            <p className="text-xs sm:text-sm">
               💡 Created with ❤️ using Next.js, TypeScript, and Tailwind CSS
             </p>
-            <p className="text-xs mt-2">
+            <p className="text-xs mt-1 sm:mt-2">
               © 2024 Color Palette Generator. All rights reserved.
             </p>
           </div>
