@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Download, Share2, Save, Palette, Grid, List, Settings } from 'lucide-react';
+import { Download, Share2, Save, Palette, Grid, List, Settings, MoreHorizontal } from 'lucide-react';
 import { PaletteDisplayProps } from '../types/color';
 import { exportToCss, exportToJson, copyToClipboard, isLightColor } from '../utils/colorUtils';
 import ColorCard from './ColorCard';
@@ -9,6 +9,7 @@ import ColorCard from './ColorCard';
 export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisplayProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [exportFormat, setExportFormat] = useState<'css' | 'json' | 'text'>('css');
 
   const handleExport = useCallback(async (format: string) => {
@@ -42,6 +43,7 @@ export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisp
     URL.revokeObjectURL(url);
     
     setShowExportMenu(false);
+    setShowMobileMenu(false);
   }, [palette]);
 
   const handleCopyAllColors = useCallback(async () => {
@@ -61,25 +63,31 @@ export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisp
       copyToClipboard(window.location.href);
     }
     
+    setShowMobileMenu(false);
     onShare?.();
   }, [palette, onShare]);
 
+  const handleSavePalette = useCallback(() => {
+    setShowMobileMenu(false);
+    onSave?.();
+  }, [onSave]);
+
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4 sm:space-y-6">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Palette className="h-6 w-6 text-blue-500" />
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <Palette className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 flex-shrink-0" />
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800 dark:text-white truncate">
             {palette.name || 'Generated Palette'}
           </h2>
-          <span className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
+          <span className="bg-blue-100 text-blue-800 text-xs sm:text-sm px-2 py-1 rounded-full whitespace-nowrap">
             {palette.colors.length} 色
           </span>
         </div>
         
-        {/* アクションボタン */}
-        <div className="flex items-center space-x-2">
+        {/* デスクトップ版アクションボタン */}
+        <div className="hidden sm:flex items-center space-x-2">
           {/* 表示モード切り替え */}
           <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
@@ -161,7 +169,7 @@ export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisp
           {/* 保存ボタン */}
           {onSave && (
             <button
-              onClick={onSave}
+              onClick={handleSavePalette}
               className="flex items-center space-x-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors duration-200"
             >
               <Save className="h-4 w-4" />
@@ -169,12 +177,104 @@ export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisp
             </button>
           )}
         </div>
+        
+        {/* モバイル版アクションボタン */}
+        <div className="flex sm:hidden items-center justify-between">
+          {/* 表示モード切り替え */}
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded ${
+                viewMode === 'grid' 
+                  ? 'bg-white dark:bg-gray-600 shadow-sm' 
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              title="グリッド表示"
+            >
+              <Grid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded ${
+                viewMode === 'list' 
+                  ? 'bg-white dark:bg-gray-600 shadow-sm' 
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              title="リスト表示"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+          
+          {/* モバイルメニューボタン */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors duration-200"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span>メニュー</span>
+            </button>
+            
+            {showMobileMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                <div className="p-2 space-y-1">
+                  <button
+                    onClick={() => handleExport('css')}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm flex items-center space-x-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>CSS エクスポート</span>
+                  </button>
+                  <button
+                    onClick={() => handleExport('json')}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm flex items-center space-x-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>JSON エクスポート</span>
+                  </button>
+                  <button
+                    onClick={() => handleExport('text')}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm flex items-center space-x-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>テキスト エクスポート</span>
+                  </button>
+                  <hr className="my-1" />
+                  <button
+                    onClick={handleSharePalette}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm flex items-center space-x-2"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span>共有</span>
+                  </button>
+                  {onSave && (
+                    <button
+                      onClick={handleSavePalette}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm flex items-center space-x-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      <span>保存</span>
+                    </button>
+                  )}
+                  <hr className="my-1" />
+                  <button
+                    onClick={handleCopyAllColors}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm"
+                  >
+                    すべての色をコピー
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       
       {/* パレット概要 */}
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <h3 className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
             🎨 クイックプレビュー
           </h3>
           <span className="text-xs text-gray-500">
@@ -183,7 +283,7 @@ export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisp
         </div>
         
         {/* 色のストライプ */}
-        <div className="flex h-8 rounded-lg overflow-hidden shadow-sm">
+        <div className="flex h-6 sm:h-8 rounded-lg overflow-hidden shadow-sm">
           {palette.colors.map((color, index) => (
             <div
               key={index}
@@ -196,25 +296,28 @@ export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisp
         </div>
         
         {/* 統計情報 */}
-        <div className="mt-3 flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+        <div className="mt-2 sm:mt-3 flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-400">
           <span>平均明度: {Math.round(palette.colors.reduce((acc, color) => acc + color.hsl.l, 0) / palette.colors.length)}%</span>
           <span>平均彩度: {Math.round(palette.colors.reduce((acc, color) => acc + color.hsl.s, 0) / palette.colors.length)}%</span>
         </div>
       </div>
       
       {/* 外部でクリックしたときにメニューを閉じる */}
-      {showExportMenu && (
+      {(showExportMenu || showMobileMenu) && (
         <div
           className="fixed inset-0 z-5"
-          onClick={() => setShowExportMenu(false)}
+          onClick={() => {
+            setShowExportMenu(false);
+            setShowMobileMenu(false);
+          }}
         />
       )}
       
       {/* カラーカード */}
       <div className={`
         ${viewMode === 'grid' 
-          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' 
-          : 'space-y-4'
+          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4' 
+          : 'space-y-3 sm:space-y-4'
         }
       `}>
         {palette.colors.map((color, index) => (
@@ -227,18 +330,18 @@ export default function PaletteDisplay({ palette, onSave, onShare }: PaletteDisp
       </div>
       
       {/* 使用例 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-lg">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-gray-800 dark:text-white">
           💡 使用例
         </h3>
         
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* CSS例 */}
           <div>
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               CSS Variables
             </h4>
-            <pre className="bg-gray-100 dark:bg-gray-700 rounded p-3 text-sm overflow-x-auto">
+            <pre className="bg-gray-100 dark:bg-gray-700 rounded p-2 sm:p-3 text-xs sm:text-sm overflow-x-auto">
               <code>
 {`:root {
 ${palette.colors.map((color, index) => `  --color-${index + 1}: ${color.hex};`).join('\n')}
@@ -252,10 +355,10 @@ ${palette.colors.map((color, index) => `  --color-${index + 1}: ${color.hex};`).
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               デザインプレビュー
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {/* グラデーション例 */}
               <div
-                className="h-20 rounded-lg shadow-sm"
+                className="h-16 sm:h-20 rounded-lg shadow-sm"
                 style={{
                   background: `linear-gradient(135deg, ${palette.colors.map(c => c.hex).join(', ')})`
                 }}
@@ -263,12 +366,12 @@ ${palette.colors.map((color, index) => `  --color-${index + 1}: ${color.hex};`).
               
               {/* カード例 1 */}
               <div 
-                className="h-20 rounded-lg flex items-center justify-center shadow-sm relative overflow-hidden" 
+                className="h-16 sm:h-20 rounded-lg flex items-center justify-center shadow-sm relative overflow-hidden" 
                 style={{ backgroundColor: palette.colors[0]?.hex }}
               >
                 <div className="text-center z-10">
                   <div 
-                    className="text-sm font-medium"
+                    className="text-xs sm:text-sm font-medium"
                     style={{ 
                       color: isLightColor(palette.colors[0]?.hex || '#000000') ? '#000000' : '#FFFFFF'
                     }}
@@ -287,7 +390,7 @@ ${palette.colors.map((color, index) => `  --color-${index + 1}: ${color.hex};`).
               </div>
               
               {/* カード例 2 - 複数色使用 */}
-              <div className="h-20 rounded-lg shadow-sm overflow-hidden">
+              <div className="h-16 sm:h-20 rounded-lg shadow-sm overflow-hidden">
                 <div className="flex h-full">
                   <div 
                     className="flex-1 flex items-center justify-center"
@@ -325,11 +428,11 @@ ${palette.colors.map((color, index) => `  --color-${index + 1}: ${color.hex};`).
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               配色パターン
             </h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* モノクロ調 */}
               <div className="space-y-2">
                 <div className="text-xs text-gray-500">モノクロ調</div>
-                <div className="flex h-6 rounded overflow-hidden">
+                <div className="flex h-4 sm:h-6 rounded overflow-hidden">
                   {palette.colors.slice(0, 3).map((color, index) => (
                     <div
                       key={index}
@@ -343,7 +446,7 @@ ${palette.colors.map((color, index) => `  --color-${index + 1}: ${color.hex};`).
               {/* ビビッド調 */}
               <div className="space-y-2">
                 <div className="text-xs text-gray-500">ビビッド調</div>
-                <div className="flex h-6 rounded overflow-hidden">
+                <div className="flex h-4 sm:h-6 rounded overflow-hidden">
                   {palette.colors.slice(0, 3).map((color, index) => (
                     <div
                       key={index}
