@@ -9,6 +9,15 @@ const nextConfig = {
   output: 'standalone',
   trailingSlash: false,
   assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
+  eslint: {
+    // 🎯 ESLint警告をエラーではなく警告として扱う
+    ignoreDuringBuilds: false,
+    dirs: ['src'],
+  },
+  // 🔧 TypeScript設定
+  typescript: {
+    ignoreBuildErrors: false,
+  },
 }
 
 module.exports = nextConfig

@@ -1,7 +1,7 @@
 // 🎯 **大人向け高度カラーユーティリティ**
 
 import chroma from 'chroma-js';
-import { formatCss, formatHsl, formatLab, formatLch, formatRgb, parse } from 'culori';
+import { formatLab, formatLch, formatRgb, parse } from 'culori';
 import { ColorInfo } from '../types/color';
 import { AdvancedColorInfo, LABColor, WCAGResult, ColorBlindnessResult } from '../types/advanced';
 
