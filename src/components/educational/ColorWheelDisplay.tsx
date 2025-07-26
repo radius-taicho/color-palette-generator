@@ -190,7 +190,7 @@ export default function ColorWheelDisplay({
                   centerX, centerY + 20);
     }
 
-  }, [selectedColor, showHarmonyLines, showAngles, hoveredAngle, size]);
+  }, [selectedColor, showHarmonyLines, showAngles, hoveredAngle]);
 
   // 🖱️ マウス/タッチ操作
   const getAngleFromEvent = useCallback((event: MouseEvent | React.MouseEvent | TouchEvent | React.TouchEvent) => {

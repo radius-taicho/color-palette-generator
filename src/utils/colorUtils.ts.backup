@@ -2,12 +2,6 @@ import chroma from 'chroma-js';
 import { ColorInfo, MixedColor } from '../types/color';
 
 /**
- * 🎨 **最適化されたカラーユーティリティ**
- * 
- * 未使用関数を削除し、実際に使用される機能のみを残しました
- */
-
-/**
  * RGB値をHEXに変換
  */
 export function rgbToHex(r: number, g: number, b: number): string {
@@ -57,9 +51,6 @@ export function generateColorId(): string {
 
 /**
  * 2つの色を混合する
- * 
- * @example
- * const mixed = mixColors(redColor, blueColor, 0.5);
  */
 export function mixColors(color1: ColorInfo, color2: ColorInfo, ratio: number = 0.5): MixedColor {
   const mixed = chroma.mix(color1.hex, color2.hex, ratio);
@@ -76,39 +67,32 @@ export function mixColors(color1: ColorInfo, color2: ColorInfo, ratio: number = 
 }
 
 /**
- * 複数の色を混合する（3色以上対応）
- * 
- * @example
- * const mixed = mixMultipleColors([redColor, greenColor, blueColor]);
+ * 複数の色を混合する
  */
-export function mixMultipleColors(colors: ColorInfo[]): MixedColor {
-  if (colors.length < 2) {
-    throw new Error('2色以上の色が必要です');
+export function mixMultipleColors(colors: ColorInfo[], ratios?: number[]): MixedColor {
+  if (colors.length < 2) throw new Error('最低2色必要です');
+  
+  const equalRatio = 1 / colors.length;
+  const finalRatios = ratios || colors.map(() => equalRatio);
+  
+  // 最初の2色から始めて、順次混合
+  let result = mixColors(colors[0], colors[1], finalRatios[1] / (finalRatios[0] + finalRatios[1]));
+  
+  // 3色目以降を順次混合
+  for (let i = 2; i < colors.length; i++) {
+    const currentRatio = finalRatios[i] / finalRatios.slice(0, i + 1).reduce((a, b) => a + b, 0);
+    result = mixColors(
+      { ...result, id: 'temp_mixed' },
+      colors[i],
+      currentRatio
+    );
   }
-  
-  if (colors.length === 2) {
-    return mixColors(colors[0], colors[1]);
-  }
-  
-  // 複数色を順番に混合
-  let currentMix = colors[0].hex;
-  
-  for (let i = 1; i < colors.length; i++) {
-    currentMix = chroma.mix(currentMix, colors[i].hex, 1 / (i + 1)).hex();
-  }
-  
-  const [r, g, b] = chroma(currentMix).rgb();
-  const mixedColorInfo = createColorInfo(Math.round(r), Math.round(g), Math.round(b));
-  
-  // すべての親色のIDを記録
-  const parentIds = colors.map(c => c.id!);
-  const colorNames = colors.map(c => c.name).join(' × ');
   
   return {
-    ...mixedColorInfo,
-    parentColors: parentIds,
-    ratio: colors.map(() => 1 / colors.length), // 均等な比率
-    name: `混合色: ${colorNames}`
+    ...result,
+    parentColors: colors.map(c => c.id!),
+    ratio: finalRatios,
+    name: colors.map(c => c.name).join(' × ')
   };
 }
 
@@ -238,11 +222,23 @@ export function getComplementaryColor(hex: string): string {
 }
 
 /**
+ * 類似色を生成
+ */
+export function getAnalogousColors(hex: string, count: number = 5): string[] {
+  const hsl = chroma(hex).hsl();
+  const baseHue = hsl[0] || 0;
+  const colors: string[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const hue = (baseHue + (i - Math.floor(count / 2)) * 30) % 360;
+    colors.push(chroma.hsl(hue, hsl[1], hsl[2]).hex());
+  }
+  
+  return colors;
+}
+
+/**
  * カラーパレットをCSS形式でエクスポート
- * 
- * @example
- * const css = exportToCss(colors, 'ブランドカラー');
- * // :root { --color-1: #FF0000; --color-2: #00FF00; }
  */
 export function exportToCss(colors: ColorInfo[], paletteName: string): string {
   const cssVars = colors.map((color, index) => 

@@ -8,17 +8,11 @@ import {
 } from '../types/color';
 
 /**
- * 🎓 **最適化された教育的色彩ユーティリティ**
- * 
- * 実際に使用される教育機能のみを残しました
+ * 🎓 中高生向け教育的色彩ユーティリティ
  */
 
 /**
  * 色の科学的情報を生成
- * 
- * @example
- * const science = generateColorScience(redColor);
- * // { wavelength: 650, luminance: 0.2126, chromaticity: {...} }
  */
 export function generateColorScience(color: ColorInfo): ColorScience {
   const chromaColor = chroma(color.hex);
@@ -28,23 +22,31 @@ export function generateColorScience(color: ColorInfo): ColorScience {
   const getWavelength = (hue: number): number | undefined => {
     if (isNaN(hue)) return undefined;
     
+    // 色相から波長を概算（非線形変換）
     if (hue >= 0 && hue < 60) {
-      return 700 - (hue / 60) * 75; // 700-625nm (赤→橙)
+      // 赤 → 橙
+      return 700 - (hue / 60) * 75; // 700-625nm
     } else if (hue >= 60 && hue < 120) {
-      return 625 - ((hue - 60) / 60) * 95; // 625-530nm (橙→黄→緑)
+      // 橙 → 黄 → 緑
+      return 625 - ((hue - 60) / 60) * 95; // 625-530nm
     } else if (hue >= 120 && hue < 180) {
-      return 530 - ((hue - 120) / 60) * 30; // 530-500nm (緑→シアン)
+      // 緑 → シアン
+      return 530 - ((hue - 120) / 60) * 30; // 530-500nm
     } else if (hue >= 180 && hue < 240) {
-      return 500 - ((hue - 180) / 60) * 25; // 500-475nm (シアン→青)
+      // シアン → 青
+      return 500 - ((hue - 180) / 60) * 25; // 500-475nm
     } else if (hue >= 240 && hue < 300) {
-      return 475 - ((hue - 240) / 60) * 65; // 475-410nm (青→紫)
+      // 青 → 紫
+      return 475 - ((hue - 240) / 60) * 65; // 475-410nm
     } else {
-      return 410 - ((hue - 300) / 60) * 30; // 410-380nm (紫→赤)
+      // 紫 → 赤
+      return 410 - ((hue - 300) / 60) * 30; // 410-380nm
     }
   };
 
   // CIE xy色度座標（簡易計算）
   const getChromaticity = (rgb: number[]): { x: number; y: number } => {
+    // RGB to XYZ (sRGB)
     const [r, g, b] = rgb.map(val => {
       val = val / 255;
       if (val > 0.04045) {
@@ -92,10 +94,6 @@ export function calculateWheelPosition(color: ColorInfo): { angle: number; radiu
 
 /**
  * 色彩心理効果を取得
- * 
- * @example
- * const effects = getColorPsychologyEffects(blueColor);
- * // ['冷静', '信頼', '安定', '集中']
  */
 export function getColorPsychologyEffects(color: ColorInfo): string[] {
   const hsl = chroma(color.hex).hsl();
@@ -182,9 +180,6 @@ export function enhanceColorWithEducationalInfo(color: ColorInfo): EducationalCo
 
 /**
  * 混色の理論説明を生成
- * 
- * @example
- * const theory = generateMixingTheory([red, blue], purple);
  */
 export function generateMixingTheory(colors: ColorInfo[], result: ColorInfo): ColorTheoryExplanation {
   const isAdditive = colors.length <= 3; // 光の三原色的な混合かどうか
@@ -264,6 +259,31 @@ export function createEducationalMixingResult(
   };
 }
 
+
+
+/**
+ * 色の波長から見える色の説明を取得
+ */
+export function getWavelengthDescription(wavelength: number): string {
+  if (wavelength < 380) {
+    return '紫外線領域（人間の目には見えません）';
+  } else if (wavelength < 450) {
+    return '紫色（最も波長の短い可視光線）';
+  } else if (wavelength < 495) {
+    return '青色（空や海の色）';
+  } else if (wavelength < 570) {
+    return '緑色（自然界で最も多く見られる色）';
+  } else if (wavelength < 590) {
+    return '黄色（太陽光の主成分）';
+  } else if (wavelength < 620) {
+    return 'オレンジ色（夕日や火の色）';
+  } else if (wavelength < 750) {
+    return '赤色（最も波長の長い可視光線）';
+  } else {
+    return '赤外線領域（人間の目には見えません）';
+  }
+}
+
 /**
  * 色相環上の角度から色名を取得
  */
@@ -282,31 +302,4 @@ export function getColorNameFromAngle(angle: number): string {
   if (normalizedAngle < 285) return '青紫';
   if (normalizedAngle < 315) return '紫';
   return '赤紫';
-}
-
-/**
- * 波長に基づいた色の説明を生成
- * 
- * @example
- * const desc = getWavelengthDescription(650);
- * // "赤色領域 - 暖かく情熱的な印象"
- */
-export function getWavelengthDescription(wavelength: number): string {
-  if (wavelength >= 700 && wavelength <= 750) {
-    return "深い赤色領域 - 強い存在感と情熱を表現";
-  } else if (wavelength >= 650 && wavelength < 700) {
-    return "赤色領域 - 暖かく情熱的な印象";
-  } else if (wavelength >= 590 && wavelength < 650) {
-    return "オレンジ色領域 - 活力と親しみやすさを演出";
-  } else if (wavelength >= 570 && wavelength < 590) {
-    return "黄色領域 - 明るく注意を引く色";
-  } else if (wavelength >= 495 && wavelength < 570) {
-    return "緑色領域 - 自然で安らぎを与える色";
-  } else if (wavelength >= 450 && wavelength < 495) {
-    return "青色領域 - 冷静で信頼感を与える色";
-  } else if (wavelength >= 380 && wavelength < 450) {
-    return "紫色領域 - 神秘的で高貴な印象";
-  } else {
-    return "可視光線外 - 特殊な光の領域";
-  }
 }

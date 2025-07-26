@@ -1,7 +1,7 @@
 // 🎯 **大人向け高度カラーユーティリティ**
 
 import chroma from 'chroma-js';
-import { formatLab, formatLch, formatRgb, parse } from 'culori';
+import { formatRgb, parse, lab, lch, rgb, differenceEuclidean, differenceCie94, differenceCiede2000 } from 'culori';
 import { ColorInfo } from '../types/color';
 import { AdvancedColorInfo, LABColor, WCAGResult, ColorBlindnessResult } from '../types/advanced';
 
@@ -15,29 +15,27 @@ import { AdvancedColorInfo, LABColor, WCAGResult, ColorBlindnessResult } from '.
  * // { l: 65.2, a: 18.4, b: 58.7 }
  */
 export function rgbToLab(r: number, g: number, b: number): LABColor {
-  const rgb = { r: r / 255, g: g / 255, b: b / 255 };
-  const lab = formatLab(rgb);
-  const parsed = parse(lab);
+  const rgbColor = { mode: 'rgb' as const, r: r / 255, g: g / 255, b: b / 255 };
+  const labColor = lab(rgbColor);
   
   return {
-    l: Math.round((parsed?.l || 0) * 100) / 100,
-    a: Math.round((parsed?.a || 0) * 100) / 100,
-    b: Math.round((parsed?.b || 0) * 100) / 100
+    l: Math.round((labColor?.l || 0) * 100) / 100,
+    a: Math.round((labColor?.a || 0) * 100) / 100,
+    b: Math.round((labColor?.b || 0) * 100) / 100
   };
 }
 
 /**
  * 🔬 **精密色変換: LAB → RGB色空間**
  */
-export function labToRgb(lab: LABColor): { r: number; g: number; b: number } {
-  const labColor = `lab(${lab.l}% ${lab.a} ${lab.b})`;
-  const rgb = formatRgb(labColor);
-  const parsed = parse(rgb);
+export function labToRgb(labColor: LABColor): { r: number; g: number; b: number } {
+  const labObj = { mode: 'lab' as const, l: labColor.l, a: labColor.a, b: labColor.b };
+  const rgbColor = rgb(labObj);
   
   return {
-    r: Math.round((parsed?.r || 0) * 255),
-    g: Math.round((parsed?.g || 0) * 255),
-    b: Math.round((parsed?.b || 0) * 255)
+    r: Math.round((rgbColor?.r || 0) * 255),
+    g: Math.round((rgbColor?.g || 0) * 255),
+    b: Math.round((rgbColor?.b || 0) * 255)
   };
 }
 
@@ -47,14 +45,13 @@ export function labToRgb(lab: LABColor): { r: number; g: number; b: number } {
  * LCHは明度、彩度、色相の円筒座標系で直感的な色調整が可能
  */
 export function rgbToLch(r: number, g: number, b: number): { l: number; c: number; h: number } {
-  const rgb = { r: r / 255, g: g / 255, b: b / 255 };
-  const lch = formatLch(rgb);
-  const parsed = parse(lch);
+  const rgbColor = { mode: 'rgb' as const, r: r / 255, g: g / 255, b: b / 255 };
+  const lchColor = lch(rgbColor);
   
   return {
-    l: Math.round((parsed?.l || 0) * 100) / 100,
-    c: Math.round((parsed?.c || 0) * 100) / 100,
-    h: Math.round((parsed?.h || 0) * 100) / 100
+    l: Math.round((lchColor?.l || 0) * 100) / 100,
+    c: Math.round((lchColor?.c || 0) * 100) / 100,
+    h: Math.round((lchColor?.h || 0) * 100) / 100
   };
 }
 
@@ -69,14 +66,40 @@ export function rgbToLch(r: number, g: number, b: number): { l: number; c: numbe
  * // 0.8 (ほぼ同じ赤色)
  */
 export function calculateDeltaE2000(color1: string, color2: string): number {
-  return Math.round(chroma.deltaE(color1, color2, 'CIE2000') * 100) / 100;
+  try {
+    const parsedColor1 = parse(color1);
+    const parsedColor2 = parse(color2);
+    
+    if (!parsedColor1 || !parsedColor2) {
+      return 100; // 無効な色の場合は最大差値を返す
+    }
+    
+    const deltaE = differenceCiede2000()(parsedColor1, parsedColor2);
+    return Math.round(deltaE * 100) / 100;
+  } catch (error) {
+    // フォールバックとしてchroma.jsのデフォルトdeltaEを使用
+    return Math.round(chroma.deltaE(color1, color2) * 100) / 100;
+  }
 }
 
 /**
  * 📊 **高精度Delta E計算 (CIE94)**
  */
 export function calculateDeltaE94(color1: string, color2: string): number {
-  return Math.round(chroma.deltaE(color1, color2, 'CIE94') * 100) / 100;
+  try {
+    const parsedColor1 = parse(color1);
+    const parsedColor2 = parse(color2);
+    
+    if (!parsedColor1 || !parsedColor2) {
+      return 100; // 無効な色の場合は最大差値を返す
+    }
+    
+    const deltaE = differenceCie94()(parsedColor1, parsedColor2);
+    return Math.round(deltaE * 100) / 100;
+  } catch (error) {
+    // フォールバックとしてchroma.jsのデフォルトdeltaEを使用
+    return Math.round(chroma.deltaE(color1, color2) * 100) / 100;
+  }
 }
 
 /**

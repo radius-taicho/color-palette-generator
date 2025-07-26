@@ -17,7 +17,8 @@ import {
   ColorInfo, 
   MixedColor, 
   MiddleSchoolColorMixerProps,
-  EducationalMixingResult
+  EducationalMixingResult,
+  EducationalColorInfo
   // LearningMode は削除 - 常に全機能有効
 } from '../../types/color';
 import { 
@@ -54,7 +55,7 @@ export default function MiddleSchoolColorMixer({
   const [isDragOver, setIsDragOver] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [touchingColor, setTouchingColor] = useState<ColorInfo | null>(null);
-  const [selectedColor, setSelectedColor] = useState<ColorInfo | null>(null);
+  const [selectedColor, setSelectedColor] = useState<EducationalColorInfo | null>(null);
   const [showExplanations, setShowExplanations] = useState(true);
   const [activePanel, setActivePanel] = useState<'theory' | 'wheel' | 'temperature' | null>('theory');
   
@@ -116,6 +117,31 @@ export default function MiddleSchoolColorMixer({
     }, 600);
   }, [onColorMixed, onEducationalMixingResult]);
 
+  // 色を混ぜる処理（先に定義）
+  const handleColorMix = useCallback((color: ColorInfo) => {
+    setMixingColors(prevMixingColors => {
+      const isDuplicate = prevMixingColors.some(c => c.hex === color.hex);
+      if (isDuplicate || prevMixingColors.length >= 3) {
+        return prevMixingColors;
+      }
+
+      const newMixingColors = [...prevMixingColors, color];
+      
+      setSparkleEffect(`mix-${color.hex}`);
+      setTimeout(() => setSparkleEffect(null), 1000);
+      
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
+      }
+      
+      if (newMixingColors.length >= 2) {
+        setTimeout(() => performMixing(newMixingColors), 100);
+      }
+      
+      return newMixingColors;
+    });
+  }, [performMixing]);
+
   // ドラッグ開始
   const handleDragStart = useCallback((e: React.DragEvent, color: ColorInfo) => {
     e.dataTransfer.setData('application/json', JSON.stringify(color));
@@ -157,7 +183,7 @@ export default function MiddleSchoolColorMixer({
     
     setTouchingColor(null);
     setIsDragOver(false);
-  }, [touchingColor]);
+  }, [touchingColor, handleColorMix]);
 
   // ドロップエリア操作
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -182,32 +208,8 @@ export default function MiddleSchoolColorMixer({
     } catch (error) {
       console.error('Color drop failed:', error);
     }
-  }, []);
+  }, [handleColorMix]);
 
-  // 色を混ぜる処理
-  const handleColorMix = useCallback((color: ColorInfo) => {
-    setMixingColors(prevMixingColors => {
-      const isDuplicate = prevMixingColors.some(c => c.hex === color.hex);
-      if (isDuplicate || prevMixingColors.length >= 3) {
-        return prevMixingColors;
-      }
-
-      const newMixingColors = [...prevMixingColors, color];
-      
-      setSparkleEffect(`mix-${color.hex}`);
-      setTimeout(() => setSparkleEffect(null), 1000);
-      
-      if ('vibrate' in navigator) {
-        navigator.vibrate([100, 50, 100]);
-      }
-      
-      if (newMixingColors.length >= 2) {
-        setTimeout(() => performMixing(newMixingColors), 100);
-      }
-      
-      return newMixingColors;
-    });
-  }, [performMixing]);
 
   // ミキサーをクリア
   const handleClearMixer = useCallback(() => {

@@ -53,6 +53,35 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
     }, 600);
   }, [onColorMixed]);
 
+  // 色を混ぜる処理（メイン機能）- 先に定義
+  const handleColorMix = useCallback((color: ColorInfo) => {
+    setMixingColors(prevMixingColors => {
+      // 同じ色は追加しない、最大3色まで
+      const isDuplicate = prevMixingColors.some(c => c.hex === color.hex);
+      if (isDuplicate || prevMixingColors.length >= 3) {
+        return prevMixingColors;
+      }
+
+      const newMixingColors = [...prevMixingColors, color];
+      
+      // キラキラエフェクト
+      setSparkleEffect(`mix-${color.hex}`);
+      setTimeout(() => setSparkleEffect(null), 1000);
+      
+      // 触覚フィードバック
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
+      }
+      
+      // 2色以上になったら混合処理を実行
+      if (newMixingColors.length >= 2) {
+        setTimeout(() => performMixing(newMixingColors), 100);
+      }
+      
+      return newMixingColors;
+    });
+  }, [performMixing]);
+
   // ドラッグ開始
   const handleDragStart = useCallback((e: React.DragEvent, color: ColorInfo) => {
     e.dataTransfer.setData('application/json', JSON.stringify(color));
@@ -96,7 +125,7 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
     
     setTouchingColor(null);
     setIsDragOver(false);
-  }, [touchingColor]);
+  }, [touchingColor, handleColorMix]);
 
   // ドロップエリアにドラッグオーバー
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -123,36 +152,8 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
     } catch (error) {
       console.error('Color drop failed:', error);
     }
-  }, []);
+  }, [handleColorMix]);
 
-  // 色を混ぜる処理（メイン機能）
-  const handleColorMix = useCallback((color: ColorInfo) => {
-    setMixingColors(prevMixingColors => {
-      // 同じ色は追加しない、最大3色まで
-      const isDuplicate = prevMixingColors.some(c => c.hex === color.hex);
-      if (isDuplicate || prevMixingColors.length >= 3) {
-        return prevMixingColors;
-      }
-
-      const newMixingColors = [...prevMixingColors, color];
-      
-      // キラキラエフェクト
-      setSparkleEffect(`mix-${color.hex}`);
-      setTimeout(() => setSparkleEffect(null), 1000);
-      
-      // 触覚フィードバック
-      if ('vibrate' in navigator) {
-        navigator.vibrate([100, 50, 100]);
-      }
-      
-      // 2色以上になったら混合処理を実行
-      if (newMixingColors.length >= 2) {
-        setTimeout(() => performMixing(newMixingColors), 100);
-      }
-      
-      return newMixingColors;
-    });
-  }, [performMixing]);
 
   // 混ぜる色をクリア
   const handleClearMixer = useCallback(() => {

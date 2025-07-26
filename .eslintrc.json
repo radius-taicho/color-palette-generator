@@ -4,15 +4,7 @@
     "react/no-unescaped-entities": "off",
     "@next/next/no-page-custom-font": "off",
     "prefer-const": "error",
-    "no-unused-vars": "off",
-    "no-console": "warn",
-    "@typescript-eslint/no-unused-vars": [
-      "warn",
-      {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_"
-      }
-    ]
+    "no-unused-vars": "warn",
+    "no-console": "warn"
   }
 }
