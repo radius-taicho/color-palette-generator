@@ -169,17 +169,13 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
     setMixingColors(prevColors => {
       const newColors = prevColors.filter(c => c.hex !== colorToRemove.hex);
       
-      // 削除後の処理
-      if (newColors.length >= 2) {
-        setTimeout(() => performMixing(newColors), 100);
-      } else {
-        setMixedColor(null);
-        lastMixedRef.current = '';
-      }
+      // 削除後の処理（混合処理は行わない）
+      setMixedColor(null);
+      lastMixedRef.current = '';
       
       return newColors;
     });
-  }, [performMixing]);
+  }, []);
 
   // 混合した色をコピー
   const handleCopyMixed = useCallback(async () => {

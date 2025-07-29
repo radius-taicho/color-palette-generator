@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Download, Share2, Save, Palette, Sparkles, Copy, Heart } from 'lucide-react';
+import { Download, Share2, Save, Palette, Sparkles, Copy, Heart, Trash2, X } from 'lucide-react';
 import { PaletteDisplayProps, MixedColor } from '../types/color';
 import { exportToCss, exportToJson, copyToClipboard, generateColorId } from '../utils/colorUtils';
 import ElementaryColorMixer from './ElementaryColorMixer';
@@ -10,6 +10,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, the
   const [mixedColors, setMixedColors] = useState<MixedColor[]>([]);
   const [sparkleColor, setSparkleColor] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [duplicateNotification, setDuplicateNotification] = useState<string | null>(null);
 
   // 色がクリックされたときのキラキラエフェクト＆コピー
   const handleColorClick = useCallback(async (colorHex: string) => {
@@ -19,9 +20,32 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, the
     setTimeout(() => setSparkleColor(null), 800);
   }, []);
 
-  // 色混ぜの結果を処理
+  // 色混ぜの結果を処理（重複チェック付き）
   const handleColorMixed = useCallback((mixedColor: MixedColor) => {
-    setMixedColors(prev => [mixedColor, ...prev].slice(0, 6)); // 最新6個まで保存
+    setMixedColors(prev => {
+      // 同じ色（hex値）が既に存在するかチェック
+      const isDuplicate = prev.some(existingColor => existingColor.hex === mixedColor.hex);
+      
+      if (isDuplicate) {
+        // 重複している場合は通知を表示して追加しない
+        setDuplicateNotification(`同じ色（${mixedColor.hex}）がすでにあるよ！`);
+        setTimeout(() => setDuplicateNotification(null), 2000);
+        return prev;
+      }
+      
+      // 重複していない場合は追加（最新6個まで保存）
+      return [mixedColor, ...prev].slice(0, 6);
+    });
+  }, []);
+
+  // 混ぜた色を削除
+  const handleRemoveMixedColor = useCallback((colorToRemove: MixedColor, index: number) => {
+    setMixedColors(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // 全ての混ぜた色をクリア
+  const handleClearAllMixedColors = useCallback(() => {
+    setMixedColors([]);
   }, []);
 
   // エクスポート処理
@@ -157,25 +181,59 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, the
         theme="elementary"
       />
 
+      {/* 重複通知 */}
+      {duplicateNotification && (
+        <div className="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 rounded-lg mb-4">
+          <div className="flex items-center">
+            <div className="text-yellow-600 dark:text-yellow-400 mr-2">⚠️</div>
+            <p className="text-yellow-700 dark:text-yellow-300 font-medium">
+              {duplicateNotification}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 作った色のギャラリー */}
       {mixedColors.length > 0 && (
         <div className="bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-4 shadow-xl border-2 border-green-200">
-          <h2 className="text-xl font-bold text-center mb-4 text-gray-800 dark:text-white">
-            ✨ つくった色のコレクション
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+              ✨ つくった色のコレクション ({mixedColors.length}色)
+            </h2>
+            <button
+              onClick={handleClearAllMixedColors}
+              className="px-3 py-1 bg-red-400 hover:bg-red-500 text-white text-sm font-bold rounded-full transition-colors flex items-center"
+              title="全ての混ぜた色を削除"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              全削除
+            </button>
+          </div>
           
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {mixedColors.map((color, index) => (
               <div
                 key={`mixed-${color.hex}-${index}`}
-                className="group cursor-pointer transform transition-all duration-300 hover:scale-110"
-                onClick={() => handleColorClick(color.hex)}
+                className="group relative transform transition-all duration-300 hover:scale-110"
               >
+                {/* 削除ボタン */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveMixedColor(color, index);
+                  }}
+                  className="absolute -top-2 -right-2 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                  title="この色を削除"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+                
                 <div
-                  className={`aspect-square rounded-xl shadow-lg border-2 border-white relative overflow-hidden ${
+                  className={`aspect-square rounded-xl shadow-lg border-2 border-white relative overflow-hidden cursor-pointer ${
                     sparkleColor === color.hex ? 'animate-pulse ring-4 ring-yellow-400' : ''
                   }`}
                   style={{ backgroundColor: color.hex }}
+                  onClick={() => handleColorClick(color.hex)}
                 >
                   {/* 混合アイコン */}
                   <div className="absolute top-1 right-1 bg-yellow-400 rounded-full p-0.5">
