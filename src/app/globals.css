@@ -1,52 +1,21 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* 🎨 Tailwind v4 Theme Configuration */
+/* 🎨 Basic Theme Configuration for v4 */
 @theme {
-  /* 🎨 Color Palette */
-  --color-background: #ffffff;
-  --color-foreground: #1a1a1a;
-  --color-background-dark: #0a0a0a;
-  --color-foreground-dark: #ededed;
-  
-  /* 🔤 Typography */
   --font-family-sans: 'Inter', system-ui, sans-serif;
-  
-  /* ✨ Custom Animations */
-  --animate-fade-in: fadeIn 0.5s ease-in-out;
-  --animate-slide-up: slideUp 0.3s ease-out;
-  
-  /* 🎬 Animation Keyframes */
-  --keyframes-fade-in: {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-  };
-  --keyframes-slide-up: {
-    0% { transform: translateY(10px); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-  };
 }
 
-/* ✨ Custom Keyframes */
-@keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-@keyframes slideUp {
-  0% { transform: translateY(10px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-/* 🌓 Dark Mode Support */
+/* 🌓 Dark mode support */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: var(--color-background-dark);
-    --color-foreground: var(--color-foreground-dark);
+    --tw-bg-opacity: 1;
+    background-color: rgb(17 24 39 / var(--tw-bg-opacity));
+    color: rgb(243 244 246);
   }
 }
 
-/* 🎯 Base Styles */
+/* 🎯 Base styles */
 * {
   box-sizing: border-box;
   padding: 0;
@@ -54,151 +23,35 @@
 }
 
 body {
-  color: var(--color-foreground);
-  background: var(--color-background);
   font-family: var(--font-family-sans);
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 🪟 Glass Effect Utility */
-.glass-effect {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* 🔧 Custom utilities */
+.container-padding {
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
-/* 🎨 Color Transition Utility */
-.color-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 📏 Hover Scale Utility */
-.hover-scale:hover {
-  transform: scale(1.05);
-}
-
-/* 🌟 Custom Shadow Utility */
-.shadow-custom {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-/* 🔘 Button Components - v4 Compatible */
-.btn-primary {
-  background-color: rgb(37 99 235);
-  color: rgb(255 255 255);
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  transition-property: background-color;
-  transition-duration: 200ms;
-}
-
-.btn-primary:hover {
-  background-color: rgb(29 78 216);
-}
-
-.btn-secondary {
-  background-color: rgb(229 231 235);
-  color: rgb(31 41 55);
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  transition-property: background-color;
-  transition-duration: 200ms;
-}
-
-.btn-secondary:hover {
-  background-color: rgb(209 213 219);
-}
-
-/* 🌙 Dark Mode Support for Custom Buttons */
-@media (prefers-color-scheme: dark) {
-  .btn-secondary {
-    background-color: rgb(55 65 81);
-    color: rgb(243 244 246);
-  }
-  
-  .btn-secondary:hover {
-    background-color: rgb(75 85 99);
+@media (min-width: 640px) {
+  .container-padding {
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
 }
 
-/* 🎮 Interactive Elements Enhancement */
-.interactive-hover {
-  transition: all 0.2s ease-in-out;
-}
-
-.interactive-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* 🎯 Focus States */
-.focus-ring:focus {
-  outline: 2px solid rgb(59 130 246);
-  outline-offset: 2px;
-}
-
-/* 🌈 Color Palette Specific Styles */
-.color-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.color-card-hover:hover {
-  transform: scale(1.05) rotate(1deg);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* 📱 Mobile Optimizations */
-@media (max-width: 640px) {
-  .mobile-padding {
-    padding: 1rem;
-  }
-  
-  .mobile-text {
-    font-size: 0.875rem;
+@media (min-width: 1024px) {
+  .container-padding {
+    padding-left: 3rem;
+    padding-right: 3rem;
   }
 }
 
-/* ⚡ Performance Optimizations */
-.gpu-accelerated {
-  transform: translateZ(0);
-  will-change: transform;
-}
-
-/* 🎨 Animation Utilities */
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-in-out;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-
-/* 🎪 Accessibility Improvements */
-@media (prefers-reduced-motion: reduce) {
-  .color-transition,
-  .interactive-hover,
-  .color-card-hover,
-  .animate-fade-in,
-  .animate-slide-up {
-    transition: none;
-    animation: none;
+@media (min-width: 1280px) {
+  .container-padding {
+    padding-left: 4rem;
+    padding-right: 4rem;
   }
-}
-
-/* 📊 Data Visualization Helpers */
-.chart-container {
-  position: relative;
-  height: 400px;
-  width: 100%;
-}
-
-/* 🖼️ Image Optimization */
-.optimized-image {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: optimizeQuality;
 }

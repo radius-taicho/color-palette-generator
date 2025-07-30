@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React from 'react';
 import { Palette, Settings, Sparkles, Briefcase } from 'lucide-react';
 import { PaletteTheme } from '../types/color';
 import SettingsDropdown from './SettingsDropdown';
@@ -26,29 +26,6 @@ export default function Header({
   onColorCountChange,
   onShowHowToUse
 }: HeaderProps) {
-  // レスポンシブpadding計算
-  const getResponsivePadding = useCallback(() => {
-    if (typeof window === 'undefined') return '32px';
-    
-    const width = window.innerWidth;
-    if (width >= 1280) return '80px'; // xl以上
-    if (width >= 1024) return '64px'; // lg以上
-    if (width >= 640) return '40px';  // sm以上
-    return '32px'; // デフォルト
-  }, []);
-
-  const [currentPadding, setCurrentPadding] = useState('32px');
-
-  useEffect(() => {
-    const updatePadding = () => {
-      setCurrentPadding(getResponsivePadding());
-    };
-    
-    updatePadding();
-    window.addEventListener('resize', updatePadding);
-    
-    return () => window.removeEventListener('resize', updatePadding);
-  }, [getResponsivePadding]);
   // テーマ情報
   const themeInfo = {
     elementary: {
@@ -67,13 +44,7 @@ export default function Header({
 
   return (
     <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-      <div 
-        className="w-full"
-        style={{
-          paddingLeft: currentPadding,
-          paddingRight: currentPadding
-        }}
-      >
+      <div className="w-full px-8 sm:px-10 lg:px-16 xl:px-20">
         <div className="flex items-center justify-between h-16 lg:h-20 xl:h-24">
           <div className="flex items-center space-x-3 lg:space-x-6">
             <div className={`p-3 lg:p-4 xl:p-5 bg-gradient-to-r ${themeInfo[paletteTheme].color} rounded-lg lg:rounded-xl`}>

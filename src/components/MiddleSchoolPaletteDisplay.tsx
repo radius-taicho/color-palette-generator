@@ -42,29 +42,6 @@ export default function MiddleSchoolPaletteDisplay({
   const imageRef = useRef<HTMLImageElement>(null);
   const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // レスポンシブpadding計算
-  const getResponsivePadding = useCallback(() => {
-    if (typeof window === 'undefined') return '24px';
-    
-    const width = window.innerWidth;
-    if (width >= 1024) return '48px'; // lg以上
-    if (width >= 640) return '32px';  // sm以上
-    return '24px'; // デフォルト
-  }, []);
-
-  const [currentPadding, setCurrentPadding] = useState('24px');
-
-  useEffect(() => {
-    const updatePadding = () => {
-      setCurrentPadding(getResponsivePadding());
-    };
-    
-    updatePadding();
-    window.addEventListener('resize', updatePadding);
-    
-    return () => window.removeEventListener('resize', updatePadding);
-  }, [getResponsivePadding]);
-
   // learningModeConfig は削除 - 常に全機能有効
 
   // エクスポート処理
@@ -297,13 +274,7 @@ export default function MiddleSchoolPaletteDisplay({
   ] as const;
 
   return (
-    <div 
-      className="space-y-6"
-      style={{
-        paddingLeft: currentPadding,
-        paddingRight: currentPadding
-      }}
-    >
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8">
       {/* 🎓 教育モード ヘッダー */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl border-4 border-indigo-300">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">

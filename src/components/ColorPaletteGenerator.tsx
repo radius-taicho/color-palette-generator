@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Palette, Settings, Sparkles, Briefcase } from 'lucide-react';
 import { ColorPalette, PaletteTheme, PaletteGeneratorProps } from '../types/color';
 import { generatePaletteFromImage } from '../utils/imageUtils';
@@ -21,30 +21,6 @@ export default function ColorPaletteGenerator({ onPaletteGenerated }: PaletteGen
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paletteTheme, setPaletteTheme] = useState<PaletteTheme>('elementary');
-
-  // レスポンシブpadding計算
-  const getResponsivePadding = useCallback(() => {
-    if (typeof window === 'undefined') return '32px';
-    
-    const width = window.innerWidth;
-    if (width >= 1280) return '80px'; // xl以上
-    if (width >= 1024) return '64px'; // lg以上
-    if (width >= 640) return '40px';  // sm以上
-    return '32px'; // デフォルト
-  }, []);
-
-  const [currentPadding, setCurrentPadding] = useState('32px');
-
-  useEffect(() => {
-    const updatePadding = () => {
-      setCurrentPadding(getResponsivePadding());
-    };
-    
-    updatePadding();
-    window.addEventListener('resize', updatePadding);
-    
-    return () => window.removeEventListener('resize', updatePadding);
-  }, [getResponsivePadding]);
 
   // ユニークIDを生成するヘルパー関数
   const generateUniqueId = useCallback(() => {
@@ -197,13 +173,7 @@ export default function ColorPaletteGenerator({ onPaletteGenerated }: PaletteGen
       <div className="h-8 lg:h-16"></div>
 
       {/* メインコンテンツ */}
-      <main 
-        className="w-full py-8 lg:py-12"
-        style={{
-          paddingLeft: currentPadding,
-          paddingRight: currentPadding
-        }}
-      >
+      <main className="w-full px-8 sm:px-10 lg:px-16 xl:px-20 py-8 lg:py-12">
         {/* エラー表示 */}
         {error && (
           <div className="mb-6 lg:mb-8 p-4 lg:p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg lg:rounded-xl">
