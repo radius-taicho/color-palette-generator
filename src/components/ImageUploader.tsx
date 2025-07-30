@@ -145,7 +145,7 @@ export default function ImageUploader({ onImageUploaded, isLoading = false }: Im
           {/* クリアボタン */}
           <button
             onClick={clearPreview}
-            className="absolute top-3 lg:top-4 right-3 lg:right-4 p-2 lg:p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors duration-200"
+            className="absolute top-3 lg:top-4 right-3 lg:right-4 p-2 lg:p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors duration-200 cursor-pointer"
             aria-label="画像を削除"
           >
             <X className="h-5 w-5 lg:h-6 lg:w-6" />

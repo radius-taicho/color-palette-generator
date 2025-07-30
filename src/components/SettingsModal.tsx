@@ -24,7 +24,7 @@ export default function SettingsModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* オーバーレイ */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-pointer" 
         onClick={onClose}
       ></div>
       
@@ -37,7 +37,7 @@ export default function SettingsModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
@@ -69,7 +69,7 @@ export default function SettingsModal({
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={onShowHowToUse}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
             >
               <HelpCircle className="h-5 w-5" />
               <span className="font-medium">このアプリの使い方</span>

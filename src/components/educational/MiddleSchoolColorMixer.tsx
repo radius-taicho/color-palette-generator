@@ -365,7 +365,7 @@ export default function MiddleSchoolColorMixer({
                         />
                         <button
                           onClick={() => handleRemoveMixingColor(color)}
-                          className="absolute -top-1 -right-1 bg-red-400 hover:bg-red-500 text-white rounded-full p-0.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -top-1 -right-1 bg-red-400 hover:bg-red-500 text-white rounded-full p-0.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                           title="削除"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -380,7 +380,7 @@ export default function MiddleSchoolColorMixer({
                 
                 <button
                   onClick={handleClearMixer}
-                  className="px-3 py-1 bg-gray-400 hover:bg-gray-500 text-white text-xs rounded-full transition-colors"
+                  className="px-3 py-1 bg-gray-400 hover:bg-gray-500 text-white text-xs rounded-full transition-colors cursor-pointer"
                 >
                   クリア
                 </button>
@@ -473,7 +473,7 @@ export default function MiddleSchoolColorMixer({
             </h3>
             <button
               onClick={() => setSelectedColor(null)}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 cursor-pointer"
             >
               ✕
             </button>

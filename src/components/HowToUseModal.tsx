@@ -15,7 +15,7 @@ export default function HowToUseModal({ isOpen, onClose }: HowToUseModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* オーバーレイ */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-pointer" 
         onClick={onClose}
       ></div>
       
@@ -28,7 +28,7 @@ export default function HowToUseModal({ isOpen, onClose }: HowToUseModalProps) {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>

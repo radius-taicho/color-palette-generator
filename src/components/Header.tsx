@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Palette, Settings, Sparkles, Briefcase } from 'lucide-react';
 import { PaletteTheme } from '../types/color';
 import SettingsDropdown from './SettingsDropdown';
@@ -26,6 +26,29 @@ export default function Header({
   onColorCountChange,
   onShowHowToUse
 }: HeaderProps) {
+  // レスポンシブpadding計算
+  const getResponsivePadding = useCallback(() => {
+    if (typeof window === 'undefined') return '32px';
+    
+    const width = window.innerWidth;
+    if (width >= 1280) return '80px'; // xl以上
+    if (width >= 1024) return '64px'; // lg以上
+    if (width >= 640) return '40px';  // sm以上
+    return '32px'; // デフォルト
+  }, []);
+
+  const [currentPadding, setCurrentPadding] = useState('32px');
+
+  useEffect(() => {
+    const updatePadding = () => {
+      setCurrentPadding(getResponsivePadding());
+    };
+    
+    updatePadding();
+    window.addEventListener('resize', updatePadding);
+    
+    return () => window.removeEventListener('resize', updatePadding);
+  }, [getResponsivePadding]);
   // テーマ情報
   const themeInfo = {
     elementary: {
@@ -44,7 +67,13 @@ export default function Header({
 
   return (
     <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-      <div className="w-full px-6 sm:px-8 lg:px-12 xl:px-16">
+      <div 
+        className="w-full"
+        style={{
+          paddingLeft: currentPadding,
+          paddingRight: currentPadding
+        }}
+      >
         <div className="flex items-center justify-between h-16 lg:h-20 xl:h-24">
           <div className="flex items-center space-x-3 lg:space-x-6">
             <div className={`p-3 lg:p-4 xl:p-5 bg-gradient-to-r ${themeInfo[paletteTheme].color} rounded-lg lg:rounded-xl`}>
@@ -70,7 +99,7 @@ export default function Header({
                   <button
                     key={theme}
                     onClick={() => onThemeChange(theme)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md font-medium transition-all duration-200 text-sm ${
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md font-medium transition-all duration-200 text-sm cursor-pointer ${
                       paletteTheme === theme
                         ? `bg-gradient-to-r ${info.color} text-white shadow-md`
                         : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
@@ -88,7 +117,7 @@ export default function Header({
             <div className="relative">
               <button
                 onClick={onToggleSettings}
-                className="p-3 lg:p-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                className="p-3 lg:p-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
                 title="設定"
               >
                 <Settings className="h-6 w-6 lg:h-8 lg:w-8 xl:h-10 xl:w-10" />

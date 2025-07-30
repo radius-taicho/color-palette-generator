@@ -20,6 +20,29 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
   const imageRef = useRef<HTMLImageElement>(null);
   const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // レスポンシブpadding計算
+  const getResponsivePadding = useCallback(() => {
+    if (typeof window === 'undefined') return { horizontal: '16px', vertical: '16px' };
+    
+    const width = window.innerWidth;
+    if (width >= 1024) return { horizontal: '48px', vertical: '24px' }; // lg以上
+    if (width >= 640) return { horizontal: '32px', vertical: '20px' };  // sm以上
+    return { horizontal: '24px', vertical: '16px' }; // デフォルト
+  }, []);
+
+  const [currentPadding, setCurrentPadding] = useState({ horizontal: '24px', vertical: '16px' });
+
+  useEffect(() => {
+    const updatePadding = () => {
+      setCurrentPadding(getResponsivePadding());
+    };
+    
+    updatePadding();
+    window.addEventListener('resize', updatePadding);
+    
+    return () => window.removeEventListener('resize', updatePadding);
+  }, [getResponsivePadding]);
+
   // 色がクリックされたときのキラキラエフェクト＆コピー
   const handleColorClick = useCallback(async (colorHex: string) => {
     setSparkleColor(colorHex);
@@ -334,7 +357,13 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
       )}
 
       {/* メイン2カラムレイアウト：左側=画像（さらに小）、右側=色混ぜコーナー（さらに大） */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+      <div 
+        className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start"
+        style={{
+          paddingLeft: currentPadding.horizontal,
+          paddingRight: currentPadding.horizontal
+        }}
+      >
         {/* 左側：📸🖼️ 元画像表示（1/4幅） */}
         {showImage && palette.imageUrl && (
           <div className="order-2 lg:order-1 lg:col-span-3">
@@ -342,7 +371,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
               {/* 画像表示切り替えボタン（右上） */}
               <button
                 onClick={toggleImageDisplay}
-                className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+                className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer"
                 title="画像を非表示にする"
               >
                 <EyeOff className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -386,12 +415,12 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
               {/* 🎨 スポイトボタン（写真セクションの下部右側） */}
               <div className="flex justify-end mt-3">
                 <button
-                  onClick={toggleEyedropperMode}
-                  className={`px-3 py-2 font-bold rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 text-sm flex items-center space-x-1 ${
-                    isEyedropperMode
-                      ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white ring-2 ring-yellow-300'
-                      : 'bg-gradient-to-r from-gray-300 to-gray-400 hover:from-yellow-400 hover:to-orange-500 text-gray-700 hover:text-white'
-                  }`}
+                onClick={toggleEyedropperMode}
+                className={`px-3 py-2 font-bold rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 text-sm flex items-center space-x-1 cursor-pointer ${
+                isEyedropperMode
+                ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white ring-2 ring-yellow-300'
+                : 'bg-gradient-to-r from-gray-300 to-gray-400 hover:from-yellow-400 hover:to-orange-500 text-gray-700 hover:text-white'
+                }`}
                 >
                   <Droplets className="h-4 w-4" />
                   <span>スポイト</span>
@@ -408,7 +437,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
               {/* 画像表示ボタン */}
               <button
                 onClick={toggleImageDisplay}
-                className="p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg transition-all duration-300 hover:scale-110 mb-2"
+                className="p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg transition-all duration-300 hover:scale-110 mb-2 cursor-pointer"
                 title="画像を表示する"
               >
                 <Eye className="h-6 w-6 text-gray-600 dark:text-gray-400" />
@@ -450,7 +479,13 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
 
       {/* 重複通知 */}
       {duplicateNotification && (
-        <div className="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 rounded-lg mb-4">
+        <div 
+          className="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 rounded-lg mb-4"
+          style={{
+            marginLeft: currentPadding.horizontal,
+            marginRight: currentPadding.horizontal
+          }}
+        >
           <div className="flex items-center">
             <div className="text-yellow-600 dark:text-yellow-400 mr-2">⚠️</div>
             <p className="text-yellow-700 dark:text-yellow-300 font-medium">
@@ -462,14 +497,20 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
 
       {/* 作った色のギャラリー */}
       {mixedColors.length > 0 && (
-        <div className="bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-4 shadow-xl border-2 border-green-200">
+        <div 
+          className="bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-4 shadow-xl border-2 border-green-200"
+          style={{
+            marginLeft: currentPadding.horizontal,
+            marginRight: currentPadding.horizontal
+          }}
+        >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
               ✨ つくった色のコレクション ({mixedColors.length}色)
             </h2>
             <button
               onClick={handleClearAllMixedColors}
-              className="px-3 py-1 bg-red-400 hover:bg-red-500 text-white text-sm font-bold rounded-full transition-colors flex items-center"
+              className="px-3 py-1 bg-red-400 hover:bg-red-500 text-white text-sm font-bold rounded-full transition-colors flex items-center cursor-pointer"
               title="全ての混ぜた色を削除"
             >
               <Trash2 className="h-3 w-3 mr-1" />
@@ -489,7 +530,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
                     e.stopPropagation();
                     handleRemoveMixedColor(color, index);
                   }}
-                  className="absolute -top-2 -right-2 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                  className="absolute -top-2 -right-2 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg cursor-pointer"
                   title="この色を削除"
                 >
                   <X className="h-3 w-3" />
@@ -533,7 +574,13 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
       )}
 
       {/* クイックプレビューストライプ */}
-      <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
+      <div 
+        className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3"
+        style={{
+          marginLeft: currentPadding.horizontal,
+          marginRight: currentPadding.horizontal
+        }}
+      >
         <h3 className="text-sm font-bold text-center mb-2 text-gray-700 dark:text-gray-300">
           🌈 ぜんぶの色（{allColors.length}色）
         </h3>

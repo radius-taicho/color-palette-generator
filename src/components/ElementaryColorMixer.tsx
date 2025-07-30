@@ -60,6 +60,29 @@ export default function ElementaryColorMixer({
     };
   }, []);
 
+  // レスポンシブpadding計算
+  const getResponsivePadding = useCallback(() => {
+    if (typeof window === 'undefined') return '32px';
+    
+    const width = window.innerWidth;
+    if (width >= 1024) return '48px'; // lg以上
+    if (width >= 640) return '40px';  // sm以上
+    return '32px'; // デフォルト
+  }, []);
+
+  const [currentPadding, setCurrentPadding] = useState('32px');
+
+  useEffect(() => {
+    const updatePadding = () => {
+      setCurrentPadding(getResponsivePadding());
+    };
+    
+    updatePadding();
+    window.addEventListener('resize', updatePadding);
+    
+    return () => window.removeEventListener('resize', updatePadding);
+  }, [getResponsivePadding]);
+
   // ミキサーごとの状態を取得するヘルパー関数
   const getMixingColors = useCallback((mixerIndex: number): ColorInfo[] => {
     switch (mixerIndex) {
@@ -290,7 +313,7 @@ export default function ElementaryColorMixer({
       className="rounded-3xl shadow-2xl"
       style={{
         backgroundColor: isDarkMode ? '#1f2937' : 'white', // dark:bg-gray-800 equivalent
-        padding: '32px',
+        padding: currentPadding,
         border: '4px solid #fde047', // border-yellow-300 equivalent
         margin: '0',
         boxSizing: 'border-box'
@@ -312,7 +335,7 @@ export default function ElementaryColorMixer({
             {onSave && (
               <button
                 onClick={onSave}
-                className="px-3 py-2 bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1"
+                className="px-3 py-2 bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1 cursor-pointer"
                 title="ほぞん"
               >
                 <Heart className="h-4 w-4" />
@@ -324,7 +347,7 @@ export default function ElementaryColorMixer({
               <div className="relative">
                 <button
                   onClick={onToggleExportMenu}
-                  className="px-3 py-2 bg-gradient-to-r from-orange-400 to-red-500 hover:from-orange-500 hover:to-red-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1"
+                  className="px-3 py-2 bg-gradient-to-r from-orange-400 to-red-500 hover:from-orange-500 hover:to-red-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1 cursor-pointer"
                   title="だうんろーど"
                 >
                   <Download className="h-4 w-4" />
@@ -335,19 +358,19 @@ export default function ElementaryColorMixer({
                   <div className={`absolute top-full right-0 mt-2 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-xl border-2 border-yellow-300 p-2 z-10 min-w-max`}>
                     <button
                       onClick={() => onExport('css')}
-                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium"
+                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium cursor-pointer"
                     >
                       🎨 CSS
                     </button>
                     <button
                       onClick={() => onExport('json')}
-                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium"
+                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium cursor-pointer"
                     >
                       📄 JSON
                     </button>
                     <button
                       onClick={() => onExport('text')}
-                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium"
+                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium cursor-pointer"
                     >
                       📝 テキスト
                     </button>
@@ -359,7 +382,7 @@ export default function ElementaryColorMixer({
             {onShare && (
               <button
                 onClick={onShare}
-                className="px-3 py-2 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1"
+                className="px-3 py-2 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1 cursor-pointer"
                 title="シェア"
               >
                 <Share2 className="h-4 w-4" />
@@ -370,7 +393,7 @@ export default function ElementaryColorMixer({
             {onReset && (
               <button
                 onClick={onReset}
-                className="px-3 py-2 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1"
+                className="px-3 py-2 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1 cursor-pointer"
                 title="リセット"
               >
                 <Trash2 className="h-4 w-4" />
@@ -549,9 +572,9 @@ export default function ElementaryColorMixer({
                                 title={color.name}
                               />
                               <button
-                                onClick={() => handleRemoveMixingColor(color, mixerIndex)}
-                                className="absolute -top-1 -right-1 bg-red-400 hover:bg-red-500 text-white rounded-full p-0.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="この色を削除"
+                              onClick={() => handleRemoveMixingColor(color, mixerIndex)}
+                              className="absolute -top-1 -right-1 bg-red-400 hover:bg-red-500 text-white rounded-full p-0.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              title="この色を削除"
                               >
                                 <Trash2 className="h-2 w-2" />
                               </button>
@@ -566,7 +589,7 @@ export default function ElementaryColorMixer({
                       {/* クリアボタン */}
                       <button
                         onClick={() => handleClearMixer(mixerIndex)}
-                        className="mt-2 px-2 py-1 bg-gray-400 hover:bg-gray-500 text-white text-xs rounded-full transition-colors"
+                        className="mt-2 px-2 py-1 bg-gray-400 hover:bg-gray-500 text-white text-xs rounded-full transition-colors cursor-pointer"
                       >
                         クリア
                       </button>
