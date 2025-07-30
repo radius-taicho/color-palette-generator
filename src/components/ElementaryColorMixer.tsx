@@ -1,20 +1,108 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
-import { Palette, Sparkles, Copy, Trash2, Plus } from 'lucide-react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Palette, Sparkles, Copy, Trash2, Plus, Droplets, Heart, Download, Share2 } from 'lucide-react';
 import { ColorInfo, MixedColor, ColorMixerProps } from '../types/color';
 import { mixColors, mixMultipleColors, copyToClipboard, generateColorId } from '../utils/colorUtils';
 
-export default function ElementaryColorMixer({ colors, onColorMixed, theme }: ColorMixerProps) {
-  const [mixingColors, setMixingColors] = useState<ColorInfo[]>([]);
-  const [mixedColor, setMixedColor] = useState<MixedColor | null>(null);
+export default function ElementaryColorMixer({ 
+  colors, 
+  onColorMixed, 
+  theme, 
+  extractedColors = [],
+  onSave,
+  onShare,
+  onReset,
+  showExportMenu = false,
+  onToggleExportMenu,
+  onExport
+}: ColorMixerProps) {
+  // 3つのミキサー用の状態
+  const [mixingColors1, setMixingColors1] = useState<ColorInfo[]>([]);
+  const [mixingColors2, setMixingColors2] = useState<ColorInfo[]>([]);
+  const [mixingColors3, setMixingColors3] = useState<ColorInfo[]>([]);
+  const [mixedColor1, setMixedColor1] = useState<MixedColor | null>(null);
+  const [mixedColor2, setMixedColor2] = useState<MixedColor | null>(null);
+  const [mixedColor3, setMixedColor3] = useState<MixedColor | null>(null);
   const [sparkleEffect, setSparkleEffect] = useState<string | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [dragOverMixer, setDragOverMixer] = useState<number | null>(null);
+  const [animatingMixer, setAnimatingMixer] = useState<number | null>(null);
   const [touchingColor, setTouchingColor] = useState<ColorInfo | null>(null);
-  const mixerRef = useRef<HTMLDivElement>(null);
-  const processingRef = useRef<boolean>(false);
-  const lastMixedRef = useRef<string>(''); // 前回の混合結果を記録
+  const [activeMixer, setActiveMixer] = useState<number | null>(null); // どのミキサーがアクティブか
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  const mixer1Ref = useRef<HTMLDivElement>(null);
+  const mixer2Ref = useRef<HTMLDivElement>(null);
+  const mixer3Ref = useRef<HTMLDivElement>(null);
+  const processingRef = useRef<{[key: number]: boolean}>({1: false, 2: false, 3: false});
+  const lastMixedRef = useRef<{[key: number]: string}>({1: '', 2: '', 3: ''}); // 各ミキサーごとの前回の混合結果を記録
+
+  // ダークモード検出
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark') || 
+                     window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(isDark);
+    };
+    
+    checkDarkMode();
+    
+    // ダークモードの変更を監視
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addListener(checkDarkMode);
+    
+    return () => {
+      observer.disconnect();
+      mediaQuery.removeListener(checkDarkMode);
+    };
+  }, []);
+
+  // ミキサーごとの状態を取得するヘルパー関数
+  const getMixingColors = useCallback((mixerIndex: number): ColorInfo[] => {
+    switch (mixerIndex) {
+      case 1: return mixingColors1;
+      case 2: return mixingColors2;
+      case 3: return mixingColors3;
+      default: return [];
+    }
+  }, [mixingColors1, mixingColors2, mixingColors3]);
+
+  const setMixingColors = useCallback((mixerIndex: number, colors: ColorInfo[]) => {
+    switch (mixerIndex) {
+      case 1: setMixingColors1(colors); break;
+      case 2: setMixingColors2(colors); break;
+      case 3: setMixingColors3(colors); break;
+    }
+  }, []);
+
+  const getMixedColor = useCallback((mixerIndex: number): MixedColor | null => {
+    switch (mixerIndex) {
+      case 1: return mixedColor1;
+      case 2: return mixedColor2;
+      case 3: return mixedColor3;
+      default: return null;
+    }
+  }, [mixedColor1, mixedColor2, mixedColor3]);
+
+  const setMixedColor = useCallback((mixerIndex: number, color: MixedColor | null) => {
+    switch (mixerIndex) {
+      case 1: setMixedColor1(color); break;
+      case 2: setMixedColor2(color); break;
+      case 3: setMixedColor3(color); break;
+    }
+  }, []);
+
+  const getMixerRef = useCallback((mixerIndex: number) => {
+    switch (mixerIndex) {
+      case 1: return mixer1Ref;
+      case 2: return mixer2Ref;
+      case 3: return mixer3Ref;
+      default: return mixer1Ref;
+    }
+  }, []);
 
   // 色をクリック（コピー機能）
   const handleColorClick = useCallback(async (color: ColorInfo) => {
@@ -26,61 +114,60 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
   }, []);
 
   // 混合処理を実行（重複防止あり）
-  const performMixing = useCallback((colorsToMix: ColorInfo[]) => {
-    if (colorsToMix.length < 2 || processingRef.current) return;
+  const performMixing = useCallback((colorsToMix: ColorInfo[], mixerIndex: number) => {
+    if (colorsToMix.length < 2 || processingRef.current[mixerIndex]) return;
     
     // 同じ組み合わせの混合を防ぐ
     const colorKey = colorsToMix.map(c => c.hex).sort().join('-');
-    if (lastMixedRef.current === colorKey) return;
+    if (lastMixedRef.current[mixerIndex] === colorKey) return;
     
-    processingRef.current = true;
-    setIsAnimating(true);
+    processingRef.current[mixerIndex] = true;
+    setAnimatingMixer(mixerIndex);
     
     setTimeout(() => {
       const mixed = mixMultipleColors(colorsToMix);
-      setMixedColor(mixed);
-      setIsAnimating(false);
+      setMixedColor(mixerIndex, mixed);
+      setAnimatingMixer(null);
       
       // 重複防止のため記録
-      lastMixedRef.current = colorKey;
+      lastMixedRef.current[mixerIndex] = colorKey;
       
       // 親コンポーネントに通知
       onColorMixed(mixed);
       
       setTimeout(() => {
-        processingRef.current = false;
+        processingRef.current[mixerIndex] = false;
       }, 100);
     }, 600);
-  }, [onColorMixed]);
+  }, [onColorMixed, setMixedColor]);
 
-  // 色を混ぜる処理（メイン機能）- 先に定義
-  const handleColorMix = useCallback((color: ColorInfo) => {
-    setMixingColors(prevMixingColors => {
-      // 同じ色は追加しない、最大3色まで
-      const isDuplicate = prevMixingColors.some(c => c.hex === color.hex);
-      if (isDuplicate || prevMixingColors.length >= 3) {
-        return prevMixingColors;
-      }
+  // 色を混ぜる処理（メイン機能）- 特定のミキサーに追加
+  const handleColorMix = useCallback((color: ColorInfo, mixerIndex: number) => {
+    const currentMixingColors = getMixingColors(mixerIndex);
+    
+    // 同じ色は追加しない、最大3色まで
+    const isDuplicate = currentMixingColors.some(c => c.hex === color.hex);
+    if (isDuplicate || currentMixingColors.length >= 3) {
+      return;
+    }
 
-      const newMixingColors = [...prevMixingColors, color];
-      
-      // キラキラエフェクト
-      setSparkleEffect(`mix-${color.hex}`);
-      setTimeout(() => setSparkleEffect(null), 1000);
-      
-      // 触覚フィードバック
-      if ('vibrate' in navigator) {
-        navigator.vibrate([100, 50, 100]);
-      }
-      
-      // 2色以上になったら混合処理を実行
-      if (newMixingColors.length >= 2) {
-        setTimeout(() => performMixing(newMixingColors), 100);
-      }
-      
-      return newMixingColors;
-    });
-  }, [performMixing]);
+    const newMixingColors = [...currentMixingColors, color];
+    setMixingColors(mixerIndex, newMixingColors);
+    
+    // キラキラエフェクト
+    setSparkleEffect(`mix-${color.hex}`);
+    setTimeout(() => setSparkleEffect(null), 1000);
+    
+    // 触覚フィードバック
+    if ('vibrate' in navigator) {
+      navigator.vibrate([100, 50, 100]);
+    }
+    
+    // 2色以上になったら混合処理を実行
+    if (newMixingColors.length >= 2) {
+      setTimeout(() => performMixing(newMixingColors, mixerIndex), 100);
+    }
+  }, [getMixingColors, setMixingColors, performMixing]);
 
   // ドラッグ開始
   const handleDragStart = useCallback((e: React.DragEvent, color: ColorInfo) => {
@@ -104,11 +191,13 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     
-    if (element && mixerRef.current?.contains(element)) {
-      setIsDragOver(true);
-    } else {
-      setIsDragOver(false);
-    }
+    // どのミキサーの上にいるか判定
+    let hoveringMixer = null;
+    if (element && mixer1Ref.current?.contains(element)) hoveringMixer = 1;
+    else if (element && mixer2Ref.current?.contains(element)) hoveringMixer = 2;
+    else if (element && mixer3Ref.current?.contains(element)) hoveringMixer = 3;
+    
+    setDragOverMixer(hoveringMixer);
   }, []);
 
   // タッチ終了
@@ -119,120 +208,215 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
     const touch = e.changedTouches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     
-    if (element && mixerRef.current?.contains(element)) {
-      handleColorMix(touchingColor);
+    // どのミキサーにドロップされたか判定
+    let targetMixer = null;
+    if (element && mixer1Ref.current?.contains(element)) targetMixer = 1;
+    else if (element && mixer2Ref.current?.contains(element)) targetMixer = 2;
+    else if (element && mixer3Ref.current?.contains(element)) targetMixer = 3;
+    
+    if (targetMixer) {
+      handleColorMix(touchingColor, targetMixer);
+      setActiveMixer(targetMixer);
     }
     
     setTouchingColor(null);
-    setIsDragOver(false);
+    setDragOverMixer(null);
   }, [touchingColor, handleColorMix]);
 
   // ドロップエリアにドラッグオーバー
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent, mixerIndex: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-    setIsDragOver(true);
+    setDragOverMixer(mixerIndex);
   }, []);
 
   // ドロップエリアからドラッグアウト
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
+    setDragOverMixer(null);
   }, []);
 
   // 色をドロップ（混ぜる機能）
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent, mixerIndex: number) => {
     e.preventDefault();
-    setIsDragOver(false);
+    setDragOverMixer(null);
     
     try {
       const colorData = e.dataTransfer.getData('application/json');
       const color = JSON.parse(colorData) as ColorInfo;
-      handleColorMix(color);
+      handleColorMix(color, mixerIndex);
+      setActiveMixer(mixerIndex);
     } catch (error) {
       console.error('Color drop failed:', error);
     }
   }, [handleColorMix]);
 
+  // 混ぜる色をクリア（特定のミキサー）
+  const handleClearMixer = useCallback((mixerIndex: number) => {
+    processingRef.current[mixerIndex] = false;
+    lastMixedRef.current[mixerIndex] = '';
+    setMixingColors(mixerIndex, []);
+    setMixedColor(mixerIndex, null);
+    if (animatingMixer === mixerIndex) {
+      setAnimatingMixer(null);
+    }
+  }, [animatingMixer, setMixingColors, setMixedColor]);
 
-  // 混ぜる色をクリア
-  const handleClearMixer = useCallback(() => {
-    processingRef.current = false;
-    lastMixedRef.current = '';
-    setMixingColors([]);
-    setMixedColor(null);
-    setIsAnimating(false);
-  }, []);
+  // 混ぜる色を個別削除（特定のミキサー）
+  const handleRemoveMixingColor = useCallback((colorToRemove: ColorInfo, mixerIndex: number) => {
+    const currentColors = getMixingColors(mixerIndex);
+    const newColors = currentColors.filter(c => c.hex !== colorToRemove.hex);
+    
+    setMixingColors(mixerIndex, newColors);
+    
+    // 削除後の処理（混合処理は行わない）
+    setMixedColor(mixerIndex, null);
+    lastMixedRef.current[mixerIndex] = '';
+  }, [getMixingColors, setMixingColors, setMixedColor]);
 
-  // 混ぜる色を個別削除
-  const handleRemoveMixingColor = useCallback((colorToRemove: ColorInfo) => {
-    setMixingColors(prevColors => {
-      const newColors = prevColors.filter(c => c.hex !== colorToRemove.hex);
-      
-      // 削除後の処理（混合処理は行わない）
-      setMixedColor(null);
-      lastMixedRef.current = '';
-      
-      return newColors;
-    });
-  }, []);
-
-  // 混合した色をコピー
-  const handleCopyMixed = useCallback(async () => {
+  // 混合した色をコピー（特定のミキサー）
+  const handleCopyMixed = useCallback(async (mixerIndex: number) => {
+    const mixedColor = getMixedColor(mixerIndex);
     if (!mixedColor) return;
+    
     await copyToClipboard(mixedColor.hex);
     
-    setSparkleEffect('mixed-copy');
+    setSparkleEffect(`mixed-copy-${mixerIndex}`);
     setTimeout(() => setSparkleEffect(null), 800);
-  }, [mixedColor]);
+  }, [getMixedColor]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-2xl border-4 border-yellow-300">
+    <div 
+      className="rounded-3xl shadow-2xl"
+      style={{
+        backgroundColor: isDarkMode ? '#1f2937' : 'white', // dark:bg-gray-800 equivalent
+        padding: '32px',
+        border: '4px solid #fde047', // border-yellow-300 equivalent
+        margin: '0',
+        boxSizing: 'border-box'
+      }}
+    >
       {/* コンパクトなヘッダー */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div className="flex items-center">
-          <div className="p-2 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full mr-3">
-            <Palette className="h-6 w-6 text-white" />
-          </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               🎨 いろまぜコーナー
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              クリック=コピー、ドラッグ=まぜる
-            </p>
           </div>
         </div>
         
-        {/* 混合結果をコンパクト表示 */}
-        {mixedColor && (
-          <div className="flex items-center space-x-3">
-            <div
-              className="w-16 h-16 rounded-full border-4 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform"
-              style={{ backgroundColor: mixedColor.hex }}
-              onClick={handleCopyMixed}
-              title={`${mixedColor.name} (${mixedColor.hex}) - クリックでコピー`}
-            >
-              {sparkleEffect === 'mixed-copy' && (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-yellow-300 animate-spin" />
-                </div>
-              )}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-800 dark:text-white">できた！</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">{mixedColor.hex}</p>
-            </div>
+        {/* アクションボタン群（右寄せ） */}
+        <div className="flex justify-end">
+          <div className="flex gap-2">
+            {onSave && (
+              <button
+                onClick={onSave}
+                className="px-3 py-2 bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1"
+                title="ほぞん"
+              >
+                <Heart className="h-4 w-4" />
+                <span className="text-sm font-medium">ほぞん</span>
+              </button>
+            )}
+            
+            {onToggleExportMenu && (
+              <div className="relative">
+                <button
+                  onClick={onToggleExportMenu}
+                  className="px-3 py-2 bg-gradient-to-r from-orange-400 to-red-500 hover:from-orange-500 hover:to-red-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1"
+                  title="だうんろーど"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="text-sm font-medium">だうんろーど</span>
+                </button>
+                
+                {showExportMenu && onExport && (
+                  <div className={`absolute top-full right-0 mt-2 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-xl border-2 border-yellow-300 p-2 z-10 min-w-max`}>
+                    <button
+                      onClick={() => onExport('css')}
+                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium"
+                    >
+                      🎨 CSS
+                    </button>
+                    <button
+                      onClick={() => onExport('json')}
+                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium"
+                    >
+                      📄 JSON
+                    </button>
+                    <button
+                      onClick={() => onExport('text')}
+                      className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium"
+                    >
+                      📝 テキスト
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {onShare && (
+              <button
+                onClick={onShare}
+                className="px-3 py-2 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1"
+                title="シェア"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="text-sm font-medium">シェア</span>
+              </button>
+            )}
+            
+            {onReset && (
+              <button
+                onClick={onReset}
+                className="px-3 py-2 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-1"
+                title="リセット"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="text-sm font-medium">リセット</span>
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 左側：選べる色 */}
-        <div className="lg:col-span-2">
-          <h3 className="text-lg font-bold mb-3 text-gray-700 dark:text-gray-300">
-            🌈 色をえらんでね
-          </h3>
+      {/* 混合結果をコンパクト表示 - 3つのミキサーすべて */}
+      {[1, 2, 3].some(mixerIndex => getMixedColor(mixerIndex)) && (
+        <div className="mb-6">
+          <div className="flex items-center justify-center space-x-4">
+            {[1, 2, 3].map((mixerIndex) => {
+              const mixedColor = getMixedColor(mixerIndex);
+              if (!mixedColor) return null;
+              
+              return (
+                <div key={`mixed-result-${mixerIndex}`} className="flex items-center space-x-2">
+                  <div
+                    className="w-12 h-12 rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform"
+                    style={{ backgroundColor: mixedColor.hex }}
+                    onClick={() => handleCopyMixed(mixerIndex)}
+                    title={`${mixedColor.name} (${mixedColor.hex}) - クリックでコピー`}
+                  >
+                    {sparkleEffect === `mixed-copy-${mixerIndex}` && (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Sparkles className="h-4 w-4 text-yellow-300 animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className={`text-xs font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>できた{mixerIndex}!</p>
+                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{mixedColor.hex}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-6">
+        {/* 元の色 */}
+        <div>
           <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
             {colors.map((color, index) => {
               const hasSparkle = sparkleEffect === `copy-${color.hex}`;
@@ -240,7 +424,7 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
               return (
                 <div
                   key={color.id || `${color.hex}-${index}`}
-                  className={`relative aspect-square rounded-xl cursor-pointer transform transition-all duration-300 hover:scale-105 shadow-lg border-2 border-white select-none ${
+                  className={`group relative aspect-square rounded-xl cursor-pointer transform transition-all duration-300 hover:scale-105 shadow-lg border-2 border-white select-none ${
                     hasSparkle ? 'animate-pulse ring-4 ring-yellow-400' : ''
                   } ${touchingColor?.hex === color.hex ? 'scale-105 ring-2 ring-blue-400' : ''}`}
                   style={{ backgroundColor: color.hex }}
@@ -259,8 +443,8 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
                     </div>
                   )}
                   
-                  {/* コピーアイコン */}
-                  <div className="absolute top-1 right-1 bg-white bg-opacity-80 rounded-full p-1">
+                  {/* コピーアイコン（ホバー時のみ表示） */}
+                  <div className="absolute top-1 right-1 bg-white bg-opacity-80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <Copy className="h-3 w-3 text-gray-600" />
                   </div>
                   
@@ -273,138 +457,134 @@ export default function ElementaryColorMixer({ colors, onColorMixed, theme }: Co
             })}
           </div>
         </div>
+        
+        {/* 🔍 スポイトでとった色 */}
+        {extractedColors.length > 0 && (
+          <div>
+            <h3 className={`text-lg font-bold mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              🔍 とった色 ({extractedColors.length}色)
+            </h3>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+              {extractedColors.map((color, index) => {
+                const hasSparkle = sparkleEffect === `copy-${color.hex}`;
+                
+                return (
+                  <div
+                    key={`extracted-${color.id || color.hex}-${index}`}
+                    className={`group relative aspect-square rounded-xl cursor-pointer transform transition-all duration-300 hover:scale-105 shadow-lg border-2 border-yellow-300 select-none ${
+                      hasSparkle ? 'animate-pulse ring-4 ring-yellow-400' : ''
+                    } ${touchingColor?.hex === color.hex ? 'scale-105 ring-2 ring-blue-400' : ''}`}
+                    style={{ backgroundColor: color.hex }}
+                    draggable
+                    onClick={() => handleColorClick(color)}
+                    onDragStart={(e) => handleDragStart(e, color)}
+                    onTouchStart={(e) => handleTouchStart(e, color)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    title={`${color.name} - スポイトでとった色`}
+                  >
+                    {/* キラキラエフェクト */}
+                    {hasSparkle && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Sparkles className="h-6 w-6 text-yellow-300 animate-spin" />
+                      </div>
+                    )}
+                    
+                    {/* コピーアイコン（ホバー時のみ表示） */}
+                    <div className="absolute top-1 left-1 bg-white bg-opacity-80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Copy className="h-3 w-3 text-gray-600" />
+                    </div>
+                    
+                    {/* スポイトアイコン（常時表示） */}
+                    <div className="absolute top-1 right-1 bg-orange-400 rounded-full p-1">
+                      <Droplets className="h-3 w-3 text-white" />
+                    </div>
+                    
+                    {/* 色の名前 */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-xl text-center">
+                      {color.name}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-        {/* 右側：まぜまぜエリア（高さを動的に調整） */}
-        <div className="lg:col-span-1">
-          <h3 className="text-lg font-bold mb-3 text-gray-700 dark:text-gray-300">
-            🪄 まぜまぜエリア ({mixingColors.length}/3)
+        {/* 🪄 まぜまぜエリア */}
+        <div>
+          <h3 className={`text-lg font-bold mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            🪄 まぜまぜエリア
           </h3>
-          
-          <div
-            ref={mixerRef}
-            className={`${
-              mixingColors.length >= 3 ? 'h-60' : mixingColors.length >= 2 ? 'h-52' : 'h-48'
-            } border-4 border-dashed rounded-2xl p-4 text-center transition-all duration-300 ${
-              isDragOver 
-                ? 'border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 scale-105' 
-                : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30'
-            } ${isAnimating ? 'animate-pulse' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            {mixingColors.length > 0 ? (
-              <div className="h-full flex flex-col justify-between">
-                {/* 混ぜる色を表示（3色対応レイアウト） */}
-                <div className="flex-1 flex flex-col items-center justify-center">
-                  {mixingColors.length <= 2 ? (
-                    // 2色以下の場合は縦配置
-                    <div className="space-y-3">
-                      {mixingColors.map((color, index) => (
-                        <div key={`mixing-${color.hex}-${index}`} className="relative group flex flex-col items-center">
-                          <div
-                            className="w-12 h-12 rounded-full border-2 border-white shadow-md"
-                            style={{ backgroundColor: color.hex }}
-                            title={color.name}
-                          />
-                          <button
-                            onClick={() => handleRemoveMixingColor(color)}
-                            className="absolute -top-1 -right-1 bg-red-400 hover:bg-red-500 text-white rounded-full p-0.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="この色を削除"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                          {index < mixingColors.length - 1 && (
-                            <div className="text-center text-lg mt-2">+</div>
-                          )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((mixerIndex) => {
+              const mixingColors = getMixingColors(mixerIndex);
+              const mixerRef = getMixerRef(mixerIndex);
+              
+              return (
+                <div
+                  key={`mixer-${mixerIndex}`}
+                  ref={mixerRef}
+                  className={`h-48 border-4 border-dashed rounded-2xl p-4 text-center transition-all duration-300 ${
+                    dragOverMixer === mixerIndex
+                      ? 'border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 scale-105' 
+                      : activeMixer === mixerIndex
+                      ? 'border-green-400 bg-green-50 dark:bg-green-900/20'
+                      : `border-gray-300 dark:border-gray-600 ${isDarkMode ? 'bg-gray-700/30' : 'bg-gray-50'}`
+                  } ${animatingMixer === mixerIndex ? 'animate-pulse' : ''}`}
+                  onDragOver={(e) => handleDragOver(e, mixerIndex)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, mixerIndex)}
+                >
+                  {mixingColors.length > 0 ? (
+                    <div className="h-full flex flex-col justify-between">
+                      {/* 混ぜる色を表示 */}
+                      <div className="flex-1 flex flex-col items-center justify-center">
+                        <div className="space-y-2">
+                          {mixingColors.map((color, index) => (
+                            <div key={`mixing-${mixerIndex}-${color.hex}-${index}`} className="relative group flex flex-col items-center">
+                              <div
+                                className="w-10 h-10 rounded-full border-2 border-white shadow-md"
+                                style={{ backgroundColor: color.hex }}
+                                title={color.name}
+                              />
+                              <button
+                                onClick={() => handleRemoveMixingColor(color, mixerIndex)}
+                                className="absolute -top-1 -right-1 bg-red-400 hover:bg-red-500 text-white rounded-full p-0.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="この色を削除"
+                              >
+                                <Trash2 className="h-2 w-2" />
+                              </button>
+                              {index < mixingColors.length - 1 && (
+                                <div className="text-center text-sm mt-1">+</div>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+                      
+                      {/* クリアボタン */}
+                      <button
+                        onClick={() => handleClearMixer(mixerIndex)}
+                        className="mt-2 px-2 py-1 bg-gray-400 hover:bg-gray-500 text-white text-xs rounded-full transition-colors"
+                      >
+                        クリア
+                      </button>
                     </div>
                   ) : (
-                    // 3色の場合は三角形配置
-                    <div className="relative w-32 h-32">
-                      {mixingColors.map((color, index) => {
-                        const positions = [
-                          { top: '0%', left: '50%', transform: 'translate(-50%, 0)' },      // 上
-                          { top: '70%', left: '15%', transform: 'translate(-50%, -50%)' },  // 左下
-                          { top: '70%', left: '85%', transform: 'translate(-50%, -50%)' }   // 右下
-                        ];
-                        
-                        return (
-                          <div 
-                            key={`mixing-${color.hex}-${index}`} 
-                            className="absolute group"
-                            style={positions[index]}
-                          >
-                            <div
-                              className="w-10 h-10 rounded-full border-2 border-white shadow-md"
-                              style={{ backgroundColor: color.hex }}
-                              title={color.name}
-                            />
-                            <button
-                              onClick={() => handleRemoveMixingColor(color)}
-                              className="absolute -top-1 -right-1 bg-red-400 hover:bg-red-500 text-white rounded-full p-0.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="この色を削除"
-                            >
-                              <Trash2 className="h-2.5 w-2.5" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                      {/* 中央に + マーク */}
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl text-gray-400">
-                        +
-                      </div>
+                    <div className="h-full flex flex-col items-center justify-center">
+                      <div className="text-3xl mb-2 animate-bounce">🎨</div>
+                      <p className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        まぜまぜ{mixerIndex}
+                      </p>
+                      <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        色をドラッグしてね
+                      </p>
                     </div>
                   )}
                 </div>
-                
-                {/* クリアボタン */}
-                <button
-                  onClick={handleClearMixer}
-                  className="mt-2 px-3 py-1 bg-gray-400 hover:bg-gray-500 text-white text-xs rounded-full transition-colors"
-                >
-                  クリア
-                </button>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center">
-                <div className="text-4xl mb-2 animate-bounce">🎨</div>
-                <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-1">
-                  ここにドラッグ
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500">
-                  2色以上で混ざるよ
-                </p>
-              </div>
-            )}
-          </div>
-          
-          {/* デバッグ情報（開発用） */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Debug: {mixingColors.length}色 [{mixingColors.map(c => c.hex).join(', ')}]
-              <br />
-              Processing: {processingRef.current ? 'Yes' : 'No'} | LastMixed: {lastMixedRef.current}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* コンパクトな説明 */}
-      <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-3">
-        <div className="flex justify-center space-x-6 text-sm">
-          <div className="text-center">
-            <div className="text-lg mb-1">👆</div>
-            <span className="font-medium text-gray-700 dark:text-gray-300">クリック=コピー</span>
-          </div>
-          <div className="text-center">
-            <div className="text-lg mb-1">🎯</div>
-            <span className="font-medium text-gray-700 dark:text-gray-300">ドラッグ=まぜる</span>
-          </div>
-          <div className="text-center">
-            <div className="text-lg mb-1">✨</div>
-            <span className="font-medium text-gray-700 dark:text-gray-300">自動で完成</span>
+              );
+            })}
           </div>
         </div>
       </div>

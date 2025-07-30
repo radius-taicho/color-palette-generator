@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   Download, 
   Share2, 
@@ -9,10 +9,14 @@ import {
   RotateCcw, 
   Settings,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Droplets,
+  X,
+  Trash2
 } from 'lucide-react';
-import { ColorPalette, PaletteDisplayProps, EducationalMixingResult } from '../types/color';
+import { ColorPalette, PaletteDisplayProps, EducationalMixingResult, ColorInfo } from '../types/color';
 import { exportToCss, exportToJson, copyToClipboard } from '../utils/colorUtils';
+import { handleImageEyedropper } from '../utils/imageUtils';
 
 // 教育的コンポーネントをインポート
 import MiddleSchoolColorMixer from './educational/MiddleSchoolColorMixer';
@@ -31,6 +35,12 @@ export default function MiddleSchoolPaletteDisplay({
   const [activePanel, setActivePanel] = useState<'mixer' | 'wheel' | 'theory'>('mixer');
   const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
   const [exportFormat, setExportFormat] = useState<'css' | 'json'>('css');
+  const [extractedColors, setExtractedColors] = useState<ColorInfo[]>([]);
+  const [isEyedropperMode, setIsEyedropperMode] = useState(false);
+  const [previewColor, setPreviewColor] = useState<{ hex: string; x: number; y: number } | null>(null);
+  const [magnifiedPreview, setMagnifiedPreview] = useState<{ imageData: string; x: number; y: number } | null>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // learningModeConfig は削除 - 常に全機能有効
 
@@ -67,6 +77,193 @@ export default function MiddleSchoolPaletteDisplay({
   // 教育的混色結果ハンドラー
   const handleEducationalMixingResult = useCallback((result: EducationalMixingResult) => {
     setEducationalResult(result);
+  }, []);
+
+  // 🔍 拡大プレビューを生成（高品質版）
+  const generateMagnifiedPreview = useCallback(async (event: React.MouseEvent<HTMLImageElement>) => {
+    if (!imageRef.current) return null;
+    
+    const img = imageRef.current;
+    const rect = img.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // 画像の実際のサイズと表示サイズの比率を計算
+    const scaleX = img.naturalWidth / img.width;
+    const scaleY = img.naturalHeight / img.height;
+    
+    // 拡大範囲のサイズ（実際のピクセル単位）
+    const cropSize = 50; // 50x50ピクセルの範囲を拡大
+    const displaySize = 150; // 150x150ピクセルで表示（約3倍拡大）
+    
+    // 実際の画像座標
+    const actualX = x * scaleX;
+    const actualY = y * scaleY;
+    
+    // キャンバスを作成
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    
+    canvas.width = displaySize;
+    canvas.height = displaySize;
+    
+    // 画像の一部を拡大して描画
+    const sourceX = Math.max(0, actualX - cropSize / 2);
+    const sourceY = Math.max(0, actualY - cropSize / 2);
+    const sourceWidth = Math.min(cropSize, img.naturalWidth - sourceX);
+    const sourceHeight = Math.min(cropSize, img.naturalHeight - sourceY);
+    
+    try {
+      // 高品質レンダリング
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(
+        img,
+        sourceX, sourceY, sourceWidth, sourceHeight,
+        0, 0, displaySize, displaySize
+      );
+      
+      // 中央に精密な十字線を描画
+      ctx.strokeStyle = '#3B82F6';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'rgba(255,255,255,0.8)';
+      ctx.shadowBlur = 1;
+      
+      const center = displaySize / 2;
+      const crossSize = 10;
+      
+      // 縦線
+      ctx.beginPath();
+      ctx.moveTo(center, center - crossSize);
+      ctx.lineTo(center, center + crossSize);
+      ctx.stroke();
+      
+      // 横線
+      ctx.beginPath();
+      ctx.moveTo(center - crossSize, center);
+      ctx.lineTo(center + crossSize, center);
+      ctx.stroke();
+      
+      // 中央点
+      ctx.fillStyle = '#3B82F6';
+      ctx.shadowBlur = 2;
+      ctx.beginPath();
+      ctx.arc(center, center, 2, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      return canvas.toDataURL();
+    } catch (error) {
+      console.error('拡大プレビューの生成に失敗:', error);
+      return null;
+    }
+  }, []);
+
+  // 🔬 スポイト機能：画像から色を抽出
+  const handleImageClick = useCallback(async (event: React.MouseEvent<HTMLImageElement>) => {
+    if (!isEyedropperMode || !imageRef.current) return;
+    
+    try {
+      const extractedColor = await handleImageEyedropper(event, imageRef.current);
+      
+      // 重複チェック
+      const allColors = [...palette.colors, ...extractedColors];
+      const isDuplicate = allColors.some(color => color.hex === extractedColor.hex);
+      
+      if (isDuplicate) {
+        // 大人向けはエラーを表示しないで、静かに無視
+        return;
+      }
+      
+      // 抽出した色を追加（最大8個まで）
+      setExtractedColors(prev => [extractedColor, ...prev].slice(0, 8));
+      
+      // 選択色も更新
+      setSelectedColor(extractedColor);
+      
+      // プレビューを非表示
+      setPreviewColor(null);
+      setMagnifiedPreview(null);
+      
+    } catch (error) {
+      console.error('色の抽出に失敗しました:', error);
+    }
+  }, [isEyedropperMode, palette.colors, extractedColors]);
+
+  // 🔍 リアルタイムプレビュー機能
+  const handleImageMouseMove = useCallback(async (event: React.MouseEvent<HTMLImageElement>) => {
+    if (!isEyedropperMode || !imageRef.current) return;
+    
+    // 連続したイベントを抑制するためのスロットリング
+    if (previewTimeoutRef.current) {
+      clearTimeout(previewTimeoutRef.current);
+    }
+    
+    previewTimeoutRef.current = setTimeout(async () => {
+      try {
+        const extractedColor = await handleImageEyedropper(event, imageRef.current!);
+        
+        // 🎯 正確なマウス位置を取得（スクロール位置は既に考慮済み）
+        const mouseX = event.clientX;
+        const mouseY = event.clientY;
+        
+        setPreviewColor({
+          hex: extractedColor.hex,
+          x: mouseX,
+          y: mouseY
+        });
+        
+        // 拡大プレビューを生成
+        const magnifiedData = await generateMagnifiedPreview(event);
+        if (magnifiedData) {
+          setMagnifiedPreview({
+            imageData: magnifiedData,
+            x: mouseX,
+            y: mouseY
+          });
+        }
+      } catch (error) {
+        // エラーは無視してプレビューを非表示
+        setPreviewColor(null);
+        setMagnifiedPreview(null);
+      }
+    }, 30); // 30msのデバウンス（大人向けは少し高速）
+  }, [isEyedropperMode, generateMagnifiedPreview]);
+
+  // マウスが画像から離れたときにプレビューを非表示
+  const handleImageMouseLeave = useCallback(() => {
+    setPreviewColor(null);
+    setMagnifiedPreview(null);
+    if (previewTimeoutRef.current) {
+      clearTimeout(previewTimeoutRef.current);
+      previewTimeoutRef.current = null;
+    }
+  }, []);
+
+  // 抽出した色を削除
+  const handleRemoveExtractedColor = useCallback((colorToRemove: ColorInfo, index: number) => {
+    setExtractedColors(prev => {
+      const newColors = prev.filter((_, i) => i !== index);
+      // 削除した色が選択中の場合、別の色を選択
+      if (selectedColor?.hex === colorToRemove.hex) {
+        setSelectedColor(newColors[0] || palette.colors[0] || null);
+      }
+      return newColors;
+    });
+  }, [selectedColor, palette.colors]);
+
+  // スポイトモードの切り替え
+  const toggleEyedropperMode = useCallback(() => {
+    setIsEyedropperMode(prev => !prev);
+  }, []);
+
+  // 🧹 クリーンアップ処理
+  useEffect(() => {
+    return () => {
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+      }
+    };
   }, []);
 
   // パネル切り替えボタン
@@ -114,38 +311,138 @@ export default function MiddleSchoolPaletteDisplay({
           </div>
         </div>
 
-        {/* 🎨 元画像とパレット表示 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* 元画像 */}
+        {/* 🎨 元画像とパレット表示（パレット主役レイアウト） */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+          {/* 元画像（1/5幅） */}
           {palette.imageUrl && (
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-              <h3 className="font-bold text-gray-800 dark:text-white mb-3">📸 元画像</h3>
-              <img 
-                src={palette.imageUrl} 
-                alt={palette.name}
-                className="w-full h-48 object-cover rounded-lg shadow-md"
-              />
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 lg:col-span-1">
+              {/* ファイル名表示 */}
+              {palette.fileName && (
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-3 text-center truncate">
+                  {palette.fileName}
+                </p>
+              )}
+              
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-gray-800 dark:text-white">📸 元画像</h3>
+              </div>
+              
+              {isEyedropperMode && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2 mb-3">
+                  <p className="text-blue-800 dark:text-blue-200 text-sm font-medium">
+                    🔍 画像をクリックして色を抽出
+                  </p>
+                </div>
+              )}
+              
+              <div className="relative flex justify-center items-center min-h-[180px] bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <img 
+                  ref={imageRef}
+                  src={palette.imageUrl} 
+                  alt={palette.name}
+                  onClick={handleImageClick}
+                  onMouseMove={handleImageMouseMove}
+                  onMouseLeave={handleImageMouseLeave}
+                  className={`max-w-full max-h-48 object-contain rounded-lg shadow-md transition-all duration-300 ${
+                    isEyedropperMode 
+                      ? 'cursor-crosshair border-2 border-blue-400' 
+                      : ''
+                  }`}
+                />
+                {isEyedropperMode && (
+                  <div className="absolute top-2 right-2 bg-blue-500 text-white p-1.5 rounded-full shadow-lg">
+                    <Droplets className="h-3 w-3" />
+                  </div>
+                )}
+              </div>
+              
+              {/* 🔬 スポイトボタン（写真セクションの下部右側） */}
+              <div className="flex justify-end mt-3">
+                <button
+                  onClick={toggleEyedropperMode}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm shadow-md hover:shadow-lg transform hover:scale-105 ${
+                    isEyedropperMode
+                      ? 'bg-blue-500 text-white ring-2 ring-blue-300'
+                      : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-blue-500 hover:text-white'
+                  }`}
+                >
+                  <Droplets className="h-4 w-4" />
+                  <span>Eyedropper</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* 抽出された色 */}
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-            <h3 className="font-bold text-gray-800 dark:text-white mb-3">🎨 抽出色 ({palette.colors.length}色)</h3>
-            <div className="grid grid-cols-5 gap-2">
-              {palette.colors.map((color, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedColor(color)}
-                  className={`aspect-square rounded-lg transition-all duration-200 hover:scale-105 shadow-md border-2 ${
-                    selectedColor?.hex === color.hex 
-                      ? 'border-indigo-400 scale-105 ring-2 ring-indigo-300' 
-                      : 'border-white dark:border-gray-600'
-                  }`}
-                  style={{ backgroundColor: color.hex }}
-                  title={`${color.name} (${color.hex})`}
-                />
-              ))}
+          {/* 抽出された色（3/5幅） */}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 lg:col-span-3">
+            <h3 className="font-bold text-gray-800 dark:text-white mb-3">
+              🎨 抽出色 ({palette.colors.length + extractedColors.length}色)
+            </h3>
+            
+            {/* オリジナル抽出色 */}
+            <div className="mb-4">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">• 自動抽出 ({palette.colors.length}色)</p>
+              <div className="grid grid-cols-5 gap-2">
+                {palette.colors.map((color, index) => (
+                  <button
+                    key={`original-${index}`}
+                    onClick={() => setSelectedColor(color)}
+                    className={`aspect-square rounded-lg transition-all duration-200 hover:scale-105 shadow-md border-2 ${
+                      selectedColor?.hex === color.hex 
+                        ? 'border-indigo-400 scale-105 ring-2 ring-indigo-300' 
+                        : 'border-white dark:border-gray-600'
+                    }`}
+                    style={{ backgroundColor: color.hex }}
+                    title={`${color.name} (${color.hex})`}
+                  />
+                ))}
+              </div>
             </div>
+            
+            {/* スポイト抽出色 */}
+            {extractedColors.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">• スポイト抽出 ({extractedColors.length}色)</p>
+                  <button
+                    onClick={() => setExtractedColors([])}
+                    className="flex items-center space-x-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded text-xs font-medium transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>全削除</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {extractedColors.map((color, index) => (
+                    <div key={`extracted-${index}`} className="relative group">
+                      <button
+                        onClick={() => setSelectedColor(color)}
+                        className={`w-full aspect-square rounded-lg transition-all duration-200 hover:scale-105 shadow-md border-2 ${
+                          selectedColor?.hex === color.hex 
+                            ? 'border-blue-400 scale-105 ring-2 ring-blue-300' 
+                            : 'border-white dark:border-gray-600'
+                        }`}
+                        style={{ backgroundColor: color.hex }}
+                        title={`${color.name} (${color.hex})`}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveExtractedColor(color, index);
+                        }}
+                        className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                        title="この色を削除"
+                      >
+                        <X className="h-2 w-2" />
+                      </button>
+                      <div className="absolute bottom-0 right-0 bg-blue-400 rounded-full p-0.5">
+                        <Droplets className="h-2 w-2 text-white" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* 選択色の詳細 */}
             {selectedColor && (
@@ -162,14 +459,17 @@ export default function MiddleSchoolPaletteDisplay({
                     <p className="text-xs text-gray-600 dark:text-gray-400">
                       {selectedColor.hex} | RGB({selectedColor.rgb.r}, {selectedColor.rgb.g}, {selectedColor.rgb.b})
                     </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">
+                      HSL({selectedColor.hsl.h}°, {selectedColor.hsl.s}%, {selectedColor.hsl.l}%)
+                    </p>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* アクション */}
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+          {/* アクション（1/5幅） */}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 lg:col-span-1">
             <h3 className="font-bold text-gray-800 dark:text-white mb-3">⚡ アクション</h3>
             <div className="space-y-3">
               <button
@@ -362,6 +662,48 @@ export default function MiddleSchoolPaletteDisplay({
           </div>
         </div>
       </div>
+      
+      {/* 🔬 スマート拡大プレビュー（カーソルの右上に統合表示） */}
+      {previewColor && magnifiedPreview && (
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{
+            left: previewColor.x + 25,
+            top: previewColor.y - 90,
+            transform: 'translateZ(0)' // GPUアクセラレーションでスムーズに
+          }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-blue-400 p-4">
+            {/* カラーコード表示 */}
+            <div className="text-center mb-3">
+              <div className="flex items-center justify-center space-x-3">
+                <div
+                  className="w-5 h-5 rounded border border-gray-300 dark:border-gray-500 shadow-sm"
+                  style={{ backgroundColor: previewColor.hex }}
+                />
+                <div className="text-left">
+                  <div className="text-sm font-mono font-bold text-gray-800 dark:text-gray-200">
+                    {previewColor.hex.toUpperCase()}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    High Precision Preview
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 拡大プレビュー画像 */}
+            <img
+              src={magnifiedPreview.imageData}
+              alt="Magnified preview"
+              className="w-36 h-36 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-inner"
+            />
+          </div>
+          
+          {/* 三角形の矢印（左上から伸びる） */}
+          <div className="absolute bottom-3 left-3 w-0 h-0 border-r-[10px] border-t-[10px] border-transparent border-r-white dark:border-r-gray-800 border-t-white dark:border-t-gray-800 transform rotate-45"></div>
+        </div>
+      )}
     </div>
   );
 }

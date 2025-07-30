@@ -20,6 +20,7 @@ export interface ColorPalette {
   colors: ColorInfo[];
   createdAt: Date;
   imageUrl?: string;
+  fileName?: string; // 画像ファイル名
 }
 
 export interface MixedColor extends ColorInfo {
@@ -52,6 +53,7 @@ export interface PaletteDisplayProps {
   palette: ColorPalette;
   onSave?: () => void;
   onShare?: () => void;
+  onReset?: () => void;
   theme?: PaletteTheme;
 }
 
@@ -59,6 +61,14 @@ export interface ColorMixerProps {
   colors: ColorInfo[];
   onColorMixed: (mixedColor: MixedColor) => void;
   theme?: PaletteTheme;
+  extractedColors?: ColorInfo[]; // 🎨 スポイトで抽出した色
+  // アクションボタン用のprops
+  onSave?: () => void;
+  onShare?: () => void;
+  onReset?: () => void;
+  showExportMenu?: boolean;
+  onToggleExportMenu?: () => void;
+  onExport?: (format: string) => void;
 }
 
 export type ColorFormat = 'hex' | 'rgb' | 'hsl';
