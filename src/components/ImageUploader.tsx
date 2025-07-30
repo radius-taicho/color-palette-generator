@@ -66,7 +66,7 @@ export default function ImageUploader({ onImageUploaded, isLoading = false }: Im
       {!previewImage ? (
         <div
           className={`
-            relative border-2 border-dashed rounded-lg lg:rounded-xl p-8 lg:p-12 xl:p-16 text-center transition-colors duration-200 min-h-[200px] lg:min-h-[300px] xl:min-h-[400px] flex items-center justify-center
+            relative border-2 border-dashed rounded-lg lg:rounded-xl p-4 lg:p-6 xl:p-8 text-center transition-colors duration-200 min-h-[120px] lg:min-h-[150px] xl:min-h-[180px] flex items-center justify-center
             ${
               dragActive
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -87,27 +87,27 @@ export default function ImageUploader({ onImageUploaded, isLoading = false }: Im
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
           
-          <div className="flex flex-col items-center justify-center space-y-4 lg:space-y-6 xl:space-y-8">
+          <div className="flex flex-col items-center justify-center space-y-2 lg:space-y-3 xl:space-y-4">
             {isLoading ? (
-              <div className="animate-spin rounded-full h-16 w-16 lg:h-20 lg:w-20 xl:h-24 xl:w-24 border-b-4 lg:border-b-6 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-10 w-10 lg:h-12 lg:w-12 xl:h-14 xl:w-14 border-b-4 lg:border-b-6 border-blue-600"></div>
             ) : (
-              <Upload className="h-16 w-16 lg:h-20 lg:w-20 xl:h-24 xl:w-24 text-gray-400" />
+              <Upload className="h-10 w-10 lg:h-12 lg:w-12 xl:h-14 xl:w-14 text-gray-400" />
             )}
             
-            <div className="space-y-3 lg:space-y-4 xl:space-y-6 flex flex-col items-center">
-              <p className="text-xl lg:text-2xl xl:text-3xl font-medium text-gray-700 dark:text-gray-300">
+            <div className="space-y-1 lg:space-y-2 xl:space-y-3 flex flex-col items-center">
+              <p className="text-lg lg:text-xl xl:text-2xl font-medium text-gray-700 dark:text-gray-300">
                 {isLoading ? '処理中...' : '画像をアップロード'}
               </p>
-              <p className="text-base lg:text-lg xl:text-xl text-gray-500 dark:text-gray-400">
+              <p className="text-sm lg:text-base xl:text-lg text-gray-500 dark:text-gray-400">
                 クリックまたはドラッグ＆ドロップしてください
               </p>
-              <p className="text-sm lg:text-base xl:text-lg text-gray-400 dark:text-gray-500">
+              <p className="text-xs lg:text-sm xl:text-base text-gray-400 dark:text-gray-500">
                 JPEG、PNG、GIF、WebP (最大10MB)
               </p>
               
               {/* 最適な結果のための注意書き */}
               {!isLoading && (
-                <div className="mt-4 lg:mt-6 p-3 lg:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 w-fit mx-auto">
+                <div className="mt-2 lg:mt-3 p-3 lg:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 w-fit mx-auto">
                   <h3 className="text-sm lg:text-base font-semibold text-blue-800 dark:text-blue-300 mb-2 text-center">
                     ※最適な結果のために
                   </h3>
@@ -123,11 +123,11 @@ export default function ImageUploader({ onImageUploaded, isLoading = false }: Im
         </div>
       ) : (
         <div className="relative">
-          <div className="relative rounded-lg lg:rounded-xl overflow-hidden shadow-lg lg:shadow-xl bg-gray-100 dark:bg-gray-800 flex justify-center items-center min-h-[200px]">
+          <div className="relative rounded-lg lg:rounded-xl overflow-hidden shadow-lg lg:shadow-xl bg-gray-100 dark:bg-gray-800 flex justify-center items-center min-h-[120px]">
             <img
               src={previewImage}
               alt="アップロード画像"
-              className="max-w-full max-h-96 lg:max-h-[500px] xl:max-h-[600px] object-contain rounded-lg"
+              className="max-w-full max-h-64 lg:max-h-80 xl:max-h-96 object-contain rounded-lg"
             />
             
             {/* オーバーレイ */}

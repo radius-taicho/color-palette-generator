@@ -170,7 +170,7 @@ export default function ColorPaletteGenerator({ onPaletteGenerated }: PaletteGen
       />
 
       {/* ヘッダーとメインコンテンツの間の隙間 */}
-      <div className="h-8 lg:h-16"></div>
+      <div className="h-4 lg:h-8"></div>
 
       {/* メインコンテンツ */}
       <main className="w-full px-8 sm:px-10 lg:px-16 xl:px-20 py-8 lg:py-12">
@@ -192,10 +192,10 @@ export default function ColorPaletteGenerator({ onPaletteGenerated }: PaletteGen
           <div className="space-y-8">
             {/* 画像アップロード */}
             <div className="text-center">
-              <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-800 dark:text-white mb-6 lg:mb-8">
+              <h2 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-800 dark:text-white mb-4 lg:mb-6">
                 🎨 画像から色を抽出しましょう
               </h2>
-              <p className="text-lg lg:text-xl xl:text-2xl text-gray-600 dark:text-gray-400 mb-8 lg:mb-12 max-w-4xl mx-auto">
+              <p className="text-base lg:text-lg xl:text-xl text-gray-600 dark:text-gray-400 mb-6 lg:mb-8 max-w-4xl mx-auto">
                 お気に入りの画像をアップロードして、美しいカラーパレットを自動生成します
               </p>
               
@@ -215,7 +215,7 @@ export default function ColorPaletteGenerator({ onPaletteGenerated }: PaletteGen
       </main>
 
       {/* メインコンテンツとフッターの間の隙間 */}
-      <div className="h-12 lg:h-20"></div>
+      <div className="h-6 lg:h-12"></div>
 
       {/* モーダル */}
       <HowToUseModal
