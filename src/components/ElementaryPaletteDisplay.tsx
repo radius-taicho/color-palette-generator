@@ -20,29 +20,6 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
   const imageRef = useRef<HTMLImageElement>(null);
   const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // レスポンシブpadding計算
-  const getResponsivePadding = useCallback(() => {
-    if (typeof window === 'undefined') return { horizontal: '16px', vertical: '16px' };
-    
-    const width = window.innerWidth;
-    if (width >= 1024) return { horizontal: '48px', vertical: '24px' }; // lg以上
-    if (width >= 640) return { horizontal: '32px', vertical: '20px' };  // sm以上
-    return { horizontal: '24px', vertical: '16px' }; // デフォルト
-  }, []);
-
-  const [currentPadding, setCurrentPadding] = useState({ horizontal: '24px', vertical: '16px' });
-
-  useEffect(() => {
-    const updatePadding = () => {
-      setCurrentPadding(getResponsivePadding());
-    };
-    
-    updatePadding();
-    window.addEventListener('resize', updatePadding);
-    
-    return () => window.removeEventListener('resize', updatePadding);
-  }, [getResponsivePadding]);
-
   // 色がクリックされたときのキラキラエフェクト＆コピー
   const handleColorClick = useCallback(async (colorHex: string) => {
     setSparkleColor(colorHex);
@@ -328,15 +305,15 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
             transform: 'translateZ(0)' // GPUアクセラレーションでスムーズに
           }}
         >
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-yellow-400 p-3">
+          <div className="theme-card rounded-xl shadow-2xl border-2 border-yellow-400 p-3">
             {/* カラーコード表示 */}
             <div className="text-center mb-2">
               <div className="flex items-center justify-center space-x-2">
                 <div
-                  className="w-4 h-4 rounded border border-gray-300 dark:border-gray-500"
+                  className="w-4 h-4 rounded border theme-border"
                   style={{ backgroundColor: previewColor.hex }}
                 />
-                <span className="text-sm font-mono font-bold text-gray-800 dark:text-gray-200">
+                <span className="text-sm font-mono font-bold theme-text-primary">
                   {previewColor.hex.toUpperCase()}
                 </span>
               </div>
@@ -346,7 +323,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
             <img
               src={magnifiedPreview.imageData}
               alt="Magnified preview"
-              className="w-28 h-28 border-2 border-gray-200 dark:border-gray-600 rounded-lg"
+              className="w-28 h-28 border-2 theme-border rounded-lg"
               style={{ imageRendering: 'pixelated' }}
             />
           </div>
@@ -357,28 +334,22 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
       )}
 
       {/* メイン2カラムレイアウト：左側=画像（さらに小）、右側=色混ぜコーナー（さらに大） */}
-      <div 
-        className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start"
-        style={{
-          paddingLeft: currentPadding.horizontal,
-          paddingRight: currentPadding.horizontal
-        }}
-      >
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* 左側：📸🖼️ 元画像表示（1/4幅） */}
         {showImage && palette.imageUrl && (
           <div className="order-2 lg:order-1 lg:col-span-3">
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl p-4 relative">
+            <div className="theme-bg-image rounded-2xl p-4 relative">
               {/* 画像表示切り替えボタン（右上） */}
               <button
                 onClick={toggleImageDisplay}
-                className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer"
+                className="absolute top-3 right-3 z-10 p-2 theme-card backdrop-blur-sm hover:shadow-lg rounded-full shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer"
                 title="画像を非表示にする"
               >
-                <EyeOff className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                <EyeOff className="h-4 w-4 theme-text-secondary" />
               </button>
               {/* ファイル名表示 */}
               {palette.fileName && (
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4 text-center truncate">
+                <p className="text-sm font-medium theme-text-secondary mb-4 text-center truncate">
                   {palette.fileName}
                 </p>
               )}
@@ -391,7 +362,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
                 </div>
               )}
               
-              <div className="relative flex justify-center items-center min-h-[180px] lg:min-h-[240px] bg-gray-100 dark:bg-gray-800 rounded-xl">
+              <div className="relative flex justify-center items-center min-h-[180px] lg:min-h-[240px] theme-section rounded-xl">
                 <img 
                   ref={imageRef}
                   src={palette.imageUrl} 
@@ -433,19 +404,19 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
         {/* 左側：画像非表示時のプレースホルダー（１/４幅） */}
         {!showImage && palette.imageUrl && (
           <div className="order-2 lg:order-1 lg:col-span-2">
-            <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-3 min-h-[120px] lg:min-h-[150px] flex flex-col items-center justify-center relative">
+            <div className="theme-section rounded-2xl p-3 min-h-[120px] lg:min-h-[150px] flex flex-col items-center justify-center relative">
               {/* 画像表示ボタン */}
               <button
                 onClick={toggleImageDisplay}
-                className="p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg transition-all duration-300 hover:scale-110 mb-2 cursor-pointer"
+                className="p-3 theme-card backdrop-blur-sm hover:shadow-lg rounded-full shadow-lg transition-all duration-300 hover:scale-110 mb-2 cursor-pointer"
                 title="画像を表示する"
               >
-                <Eye className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                <Eye className="h-6 w-6 theme-text-secondary" />
               </button>
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              <p className="text-xs theme-text-muted text-center">
                 画像が非表示中
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-1">
+              <p className="text-xs theme-text-muted text-center mt-1">
                 目のアイコンで表示
               </p>
             </div>
@@ -460,7 +431,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
             ? 'lg:col-span-10'
             : 'lg:col-span-12'
         }`}>
-          <div className="bg-gradient-to-br from-pink-50 to-yellow-50 dark:from-pink-900/20 dark:to-yellow-900/20 rounded-2xl">
+          <div className="theme-bg-mixer rounded-2xl">
             <ElementaryColorMixer
               colors={palette.colors.map(c => ({ ...c, id: c.id || generateColorId() }))}
               extractedColors={extractedColors}
@@ -479,16 +450,10 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
 
       {/* 重複通知 */}
       {duplicateNotification && (
-        <div 
-          className="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 rounded-lg mb-4"
-          style={{
-            marginLeft: currentPadding.horizontal,
-            marginRight: currentPadding.horizontal
-          }}
-        >
+        <div className="theme-warning border-l-4 p-4 rounded-lg mb-4">
           <div className="flex items-center">
-            <div className="text-yellow-600 dark:text-yellow-400 mr-2">⚠️</div>
-            <p className="text-yellow-700 dark:text-yellow-300 font-medium">
+            <div className="mr-2">⚠️</div>
+            <p className="font-medium">
               {duplicateNotification}
             </p>
           </div>
@@ -497,15 +462,9 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
 
       {/* 作った色のギャラリー */}
       {mixedColors.length > 0 && (
-        <div 
-          className="bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-4 shadow-xl border-2 border-green-200"
-          style={{
-            marginLeft: currentPadding.horizontal,
-            marginRight: currentPadding.horizontal
-          }}
-        >
+        <div className="theme-bg-gallery rounded-2xl p-4 shadow-xl border-2 border-green-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+            <h2 className="text-xl font-bold theme-text-primary">
               ✨ つくった色のコレクション ({mixedColors.length}色)
             </h2>
             <button
@@ -563,7 +522,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
                 
                 {/* 色の情報 */}
                 <div className="text-center mt-1">
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                  <p className="text-xs theme-text-secondary font-mono">
                     {color.hex}
                   </p>
                 </div>
@@ -574,14 +533,8 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
       )}
 
       {/* クイックプレビューストライプ */}
-      <div 
-        className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3"
-        style={{
-          marginLeft: currentPadding.horizontal,
-          marginRight: currentPadding.horizontal
-        }}
-      >
-        <h3 className="text-sm font-bold text-center mb-2 text-gray-700 dark:text-gray-300">
+      <div className="theme-section rounded-xl p-3">
+        <h3 className="text-sm font-bold text-center mb-2 theme-text-primary">
           🌈 ぜんぶの色（{allColors.length}色）
         </h3>
         <div className="flex h-8 rounded-lg overflow-hidden shadow-lg">
@@ -595,7 +548,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
             />
           ))}
         </div>
-        <p className="text-xs text-center mt-2 text-gray-500 dark:text-gray-400">
+        <p className="text-xs text-center mt-2 theme-text-muted">
           クリックで色をコピーできるよ！
         </p>
       </div>

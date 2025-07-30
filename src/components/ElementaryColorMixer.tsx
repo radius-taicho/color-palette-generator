@@ -60,29 +60,6 @@ export default function ElementaryColorMixer({
     };
   }, []);
 
-  // レスポンシブpadding計算
-  const getResponsivePadding = useCallback(() => {
-    if (typeof window === 'undefined') return '32px';
-    
-    const width = window.innerWidth;
-    if (width >= 1024) return '48px'; // lg以上
-    if (width >= 640) return '40px';  // sm以上
-    return '32px'; // デフォルト
-  }, []);
-
-  const [currentPadding, setCurrentPadding] = useState('32px');
-
-  useEffect(() => {
-    const updatePadding = () => {
-      setCurrentPadding(getResponsivePadding());
-    };
-    
-    updatePadding();
-    window.addEventListener('resize', updatePadding);
-    
-    return () => window.removeEventListener('resize', updatePadding);
-  }, [getResponsivePadding]);
-
   // ミキサーごとの状態を取得するヘルパー関数
   const getMixingColors = useCallback((mixerIndex: number): ColorInfo[] => {
     switch (mixerIndex) {
@@ -310,11 +287,8 @@ export default function ElementaryColorMixer({
 
   return (
     <div 
-      className="rounded-3xl shadow-2xl"
+      className="rounded-3xl shadow-2xl p-4 lg:p-6 theme-bg-mixer border-4 border-yellow-300"
       style={{
-        backgroundColor: isDarkMode ? '#1f2937' : 'white', // dark:bg-gray-800 equivalent
-        padding: currentPadding,
-        border: '4px solid #fde047', // border-yellow-300 equivalent
         margin: '0',
         boxSizing: 'border-box'
       }}
@@ -323,7 +297,7 @@ export default function ElementaryColorMixer({
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center">
           <div>
-            <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+            <h2 className="text-2xl font-bold theme-text-primary">
               🎨 いろまぜコーナー
             </h2>
           </div>
@@ -355,7 +329,7 @@ export default function ElementaryColorMixer({
                 </button>
                 
                 {showExportMenu && onExport && (
-                  <div className={`absolute top-full right-0 mt-2 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-xl border-2 border-yellow-300 p-2 z-10 min-w-max`}>
+                  <div className="absolute top-full right-0 mt-2 theme-dropdown rounded-xl shadow-xl border-2 border-yellow-300 p-2 z-10 min-w-max">
                     <button
                       onClick={() => onExport('css')}
                       className="block w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg text-sm font-medium cursor-pointer"
@@ -427,8 +401,8 @@ export default function ElementaryColorMixer({
                     )}
                   </div>
                   <div>
-                    <p className={`text-xs font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>できた{mixerIndex}!</p>
-                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{mixedColor.hex}</p>
+                    <p className="text-xs font-bold theme-text-primary">できた{mixerIndex}!</p>
+                    <p className="text-xs theme-text-secondary">{mixedColor.hex}</p>
                   </div>
                 </div>
               );
@@ -484,7 +458,7 @@ export default function ElementaryColorMixer({
         {/* 🔍 スポイトでとった色 */}
         {extractedColors.length > 0 && (
           <div>
-            <h3 className={`text-lg font-bold mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            <h3 className="text-lg font-bold mb-3 theme-text-primary">
               🔍 とった色 ({extractedColors.length}色)
             </h3>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
@@ -536,7 +510,7 @@ export default function ElementaryColorMixer({
 
         {/* 🪄 まぜまぜエリア */}
         <div>
-          <h3 className={`text-lg font-bold mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <h3 className="text-lg font-bold mb-3 theme-text-primary">
             🪄 まぜまぜエリア
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -553,7 +527,7 @@ export default function ElementaryColorMixer({
                       ? 'border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 scale-105' 
                       : activeMixer === mixerIndex
                       ? 'border-green-400 bg-green-50 dark:bg-green-900/20'
-                      : `border-gray-300 dark:border-gray-600 ${isDarkMode ? 'bg-gray-700/30' : 'bg-gray-50'}`
+                      : 'theme-border theme-section'
                   } ${animatingMixer === mixerIndex ? 'animate-pulse' : ''}`}
                   onDragOver={(e) => handleDragOver(e, mixerIndex)}
                   onDragLeave={handleDragLeave}
@@ -597,10 +571,10 @@ export default function ElementaryColorMixer({
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center">
                       <div className="text-3xl mb-2 animate-bounce">🎨</div>
-                      <p className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <p className="text-sm font-bold mb-1 theme-text-secondary">
                         まぜまぜ{mixerIndex}
                       </p>
-                      <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                      <p className="text-xs theme-text-muted">
                         色をドラッグしてね
                       </p>
                     </div>

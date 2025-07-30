@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import React, { useRef, useEffect } from 'react';
-import { Info, HelpCircle } from 'lucide-react';
+import React, { useRef, useEffect, useState } from "react";
+import { Info, HelpCircle, Sun, Moon } from "lucide-react";
+import { THEME_CONFIG, ThemeMode, toggleTheme, getCurrentTheme } from '../utils/themeUtils';
 
 interface SettingsDropdownProps {
   isOpen: boolean;
@@ -16,24 +17,39 @@ export default function SettingsDropdown({
   onClose,
   colorCount,
   onColorCountChange,
-  onShowHowToUse
+  onShowHowToUse,
 }: SettingsDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>('light');
+
+  // テーマの初期状態を設定
+  useEffect(() => {
+    setCurrentTheme(getCurrentTheme());
+  }, []);
+
+  // テーマ切り替え処理
+  const handleThemeToggle = () => {
+    const newTheme = toggleTheme();
+    setCurrentTheme(newTheme);
+  };
 
   // 外側クリックで閉じる
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
 
@@ -42,30 +58,66 @@ export default function SettingsDropdown({
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+      className="absolute top-full right-0 mt-2 w-80 theme-dropdown rounded-xl shadow-2xl border theme-border overflow-hidden z-50"
     >
-      {/* 抽出色数設定 */}
+      {/* テーマ切り替え */}
       <div className="px-4 py-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          抽出する色の数
+        <label className="block text-sm font-medium theme-text-primary mb-3">
+          テーマ設定
         </label>
-        <select
-          value={colorCount}
-          onChange={(e) => onColorCountChange(parseInt(e.target.value))}
-          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <button
+          onClick={handleThemeToggle}
+          className="w-full flex items-center justify-between px-3 py-2 text-sm border theme-input rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer"
         >
-          {[3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-            <option key={num} value={num}>{num}色</option>
-          ))}
-        </select>
-        <div className="flex items-start space-x-2 mt-2 text-xs text-gray-600 dark:text-gray-400">
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">
+              {currentTheme === 'light' ? THEME_CONFIG.light.icon : THEME_CONFIG.dark.icon}
+            </span>
+            <span>
+              {currentTheme === 'light' ? THEME_CONFIG.light.name : THEME_CONFIG.dark.name}モード
+            </span>
+          </div>
+          <div className="flex items-center space-x-1 text-xs theme-text-secondary">
+            {currentTheme === 'light' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+            <span>切り替え</span>
+          </div>
+        </button>
+        <div className="flex items-start space-x-2 mt-2 text-xs theme-text-muted">
           <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-          <span>多い色数ほど詳細な分析が可能ですが、処理時間が長くなります</span>
+          <span>
+            {currentTheme === 'light' ? THEME_CONFIG.light.description : THEME_CONFIG.dark.description}で表示しています
+          </span>
         </div>
       </div>
 
       {/* セクション区切り線 */}
-      <div className="border-t border-gray-200 dark:border-gray-700"></div>
+      <div className="border-t theme-border"></div>
+      {/* 抽出色数設定 */}
+      <div className="px-4 py-4">
+        <label className="block text-sm font-medium theme-text-primary mb-3">
+          最初に抽出する色の数
+        </label>
+        <select
+          value={colorCount}
+          onChange={(e) => onColorCountChange(parseInt(e.target.value))}
+          className="w-full px-3 py-2 text-sm border theme-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {[3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+            <option key={num} value={num}>
+              {num}色
+            </option>
+          ))}
+        </select>
+        <div className="flex items-start space-x-2 mt-2 text-xs theme-text-muted">
+          <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          <span>
+            多い色数ほど詳細な分析が可能ですが、処理時間が長くなります
+          </span>
+        </div>
+      </div>
+
+      {/* セクション区切り線 */}
+      <div className="border-t theme-border"></div>
 
       {/* 使い方ボタン */}
       <div className="px-4 py-4">

@@ -69,8 +69,8 @@ export default function ImageUploader({ onImageUploaded, isLoading = false }: Im
             relative border-2 border-dashed rounded-lg lg:rounded-xl p-4 lg:p-6 xl:p-8 text-center transition-colors duration-200 min-h-[120px] lg:min-h-[150px] xl:min-h-[180px] flex items-center justify-center
             ${
               dragActive
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500'
+                ? 'border-blue-500 theme-info-box'
+                : 'theme-upload-border'
             }
             ${isLoading ? 'pointer-events-none opacity-50' : ''}
           `}
@@ -95,23 +95,23 @@ export default function ImageUploader({ onImageUploaded, isLoading = false }: Im
             )}
             
             <div className="space-y-1 lg:space-y-2 xl:space-y-3 flex flex-col items-center">
-              <p className="text-lg lg:text-xl xl:text-2xl font-medium text-gray-700 dark:text-gray-300">
-                {isLoading ? '処理中...' : '画像をアップロード'}
+              <p className="text-lg lg:text-xl xl:text-2xl font-medium theme-text-primary">
+              {isLoading ? '処理中...' : '画像をアップロード'}
               </p>
-              <p className="text-sm lg:text-base xl:text-lg text-gray-500 dark:text-gray-400">
-                クリックまたはドラッグ＆ドロップしてください
+              <p className="text-sm lg:text-base xl:text-lg theme-text-secondary">
+              クリックまたはドラッグ＆ドロップしてください
               </p>
-              <p className="text-xs lg:text-sm xl:text-base text-gray-400 dark:text-gray-500">
-                JPEG、PNG、GIF、WebP (最大10MB)
+              <p className="text-xs lg:text-sm xl:text-base theme-text-muted">
+              JPEG、PNG、GIF、WebP (最大10MB)
               </p>
               
               {/* 最適な結果のための注意書き */}
               {!isLoading && (
-                <div className="mt-2 lg:mt-3 p-3 lg:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 w-fit mx-auto">
-                  <h3 className="text-sm lg:text-base font-semibold text-blue-800 dark:text-blue-300 mb-2 text-center">
+                <div className="mt-2 lg:mt-3 p-3 lg:p-4 theme-info-box rounded-lg border w-fit mx-auto">
+                  <h3 className="text-sm lg:text-base font-semibold mb-2 text-center">
                     ※最適な結果のために
                   </h3>
-                  <div className="text-xs lg:text-sm text-blue-700 dark:text-blue-300 space-y-1 text-left">
+                  <div className="text-xs lg:text-sm space-y-1 text-left">
                     <p>• <span className="font-semibold">高解像度で色彩豊かな画像</span>を使用してください</p>
                     <p>• <span className="font-semibold">風景、アートワーク、写真</span>などが最適です</p>
                     <p>• 色の数を<span className="font-semibold">3〜10色で調整</span>できます</p>
@@ -134,7 +134,7 @@ export default function ImageUploader({ onImageUploaded, isLoading = false }: Im
             <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="bg-white/90 dark:bg-gray-800/90 rounded-lg lg:rounded-xl p-4 lg:p-6">
-                  <p className="text-base lg:text-lg xl:text-xl text-gray-700 dark:text-gray-300">
+                  <p className="text-base lg:text-lg xl:text-xl theme-text-primary">
                     📸 カラーパレット生成中...
                   </p>
                 </div>

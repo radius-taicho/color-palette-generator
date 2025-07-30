@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import './globals.css';
+import ThemeInitializer from './ThemeInitializer';
 
 export const metadata: Metadata = {
   title: 'Color Palette Generator - 画像から美しいカラーパレットを生成',
@@ -38,6 +39,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#3b82f6" />
       </head>
       <body className="antialiased">
+        <ThemeInitializer />
         {children}
       </body>
     </html>

@@ -6,6 +6,142 @@
   --font-family-sans: 'Inter', system-ui, sans-serif;
 }
 
+/* 🌓 Theme support */
+:root {
+  --theme-bg-light: #F7F7F7;
+  --theme-text-light: #333333;
+  --theme-bg-dark: #1f2937;
+  --theme-text-dark: #f3f4f6;
+  
+  /* コンポーネント別のテーマ色 */
+  --header-bg-light: #ffffff;
+  --header-bg-dark: rgba(31, 41, 55, 0.8);
+  --footer-bg-light: #ffffff;
+  --footer-bg-dark: #1f2937;
+  --card-bg-light: #ffffff;
+  --card-bg-dark: #374151;
+  --section-bg-light: #f9fafb;
+  --section-bg-dark: #374151;
+}
+
+/* カスタムテーマクラス */
+.theme-bg-main {
+  background: linear-gradient(135deg, var(--theme-bg-light) 0%, #E5E7EB 100%);
+  transition: background 0.3s ease;
+}
+
+.dark .theme-bg-main {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+}
+
+/* 画像セクション用テーマ */
+.theme-bg-image {
+  background: linear-gradient(135deg, #dbeafe 0%, #e5e7eb 100%); /* blue-50 to gray-200 */
+  transition: background 0.3s ease;
+}
+
+.dark .theme-bg-image {
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%); /* blue-900/20 to purple-900/20 */
+}
+
+/* いろまぜコーナー用テーマ */
+.theme-bg-mixer {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); /* yellow-100 to yellow-200 */
+  transition: background 0.3s ease;
+}
+
+.dark .theme-bg-mixer {
+  background: linear-gradient(135deg, rgba(219, 39, 119, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%); /* pink-900/20 to yellow-900/20 */
+}
+
+/* 作った色のギャラリー用テーマ */
+.theme-bg-gallery {
+  background: linear-gradient(135deg, #dcfce7 0%, #dbeafe 100%); /* green-100 to blue-100 */
+  transition: background 0.3s ease;
+}
+
+.dark .theme-bg-gallery {
+  background: linear-gradient(135deg, rgba(20, 83, 45, 0.2) 0%, rgba(30, 64, 175, 0.2) 100%); /* green-900/20 to blue-900/20 */
+}
+
+/* コンポーネント別テーマクラス */
+.theme-header {
+  background-color: var(--header-bg-light);
+  backdrop-filter: blur(12px);
+  transition: background-color 0.3s ease;
+}
+
+.dark .theme-header {
+  background-color: var(--header-bg-dark);
+}
+
+.theme-footer {
+  background-color: var(--footer-bg-light);
+  transition: background-color 0.3s ease;
+}
+
+.dark .theme-footer {
+  background-color: var(--footer-bg-dark);
+}
+
+.theme-card {
+  background-color: var(--card-bg-light);
+  transition: background-color 0.3s ease;
+}
+
+.dark .theme-card {
+  background-color: var(--card-bg-dark);
+}
+
+.theme-section {
+  background-color: var(--section-bg-light);
+  transition: background-color 0.3s ease;
+}
+
+.dark .theme-section {
+  background-color: var(--section-bg-dark);
+}
+
+/* テキスト色用テーマクラス */
+.theme-text-primary {
+  color: var(--theme-text-light);
+  transition: color 0.3s ease;
+}
+
+.dark .theme-text-primary {
+  color: var(--theme-text-dark);
+}
+
+.theme-text-secondary {
+  color: #6b7280; /* gray-500 */
+  transition: color 0.3s ease;
+}
+
+.dark .theme-text-secondary {
+  color: #9ca3af; /* gray-400 */
+}
+
+.theme-text-muted {
+  color: #9ca3af; /* gray-400 */
+  transition: color 0.3s ease;
+}
+
+.dark .theme-text-muted {
+  color: #6b7280; /* gray-500 */
+}
+
+/* Light mode styles */
+html:not(.dark) {
+  background-color: var(--theme-bg-light);
+  color: var(--theme-text-light);
+}
+
+/* Dark mode styles */
+html.dark {
+  background-color: var(--theme-bg-dark);
+  color: var(--theme-text-dark);
+}
+
 /* 🌓 Dark mode support */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -56,4 +192,85 @@
     padding-left: 4rem;
     padding-right: 4rem;
   }
+}
+
+/* Settings Dropdown用テーマクラス */
+.theme-dropdown {
+  background-color: #ffffff;
+  color: var(--theme-text-light);
+  border-color: #e5e7eb;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .theme-dropdown {
+  background-color: #374151;
+  color: var(--theme-text-dark);
+  border-color: #4b5563;
+}
+
+.theme-input {
+  background-color: #ffffff;
+  color: var(--theme-text-light);
+  border-color: #d1d5db;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .theme-input {
+  background-color: #374151;
+  color: var(--theme-text-dark);
+  border-color: #4b5563;
+}
+
+.theme-border {
+  border-color: #e5e7eb;
+  transition: border-color 0.3s ease;
+}
+
+.dark .theme-border {
+  border-color: #4b5563;
+}
+
+/* ImageUploader用テーマクラス */
+.theme-upload-border {
+  border-color: #d1d5db;
+  transition: border-color 0.3s ease;
+}
+
+.theme-upload-border:hover {
+  border-color: #9ca3af;
+}
+
+.dark .theme-upload-border {
+  border-color: #4b5563;
+}
+
+.dark .theme-upload-border:hover {
+  border-color: #6b7280;
+}
+
+.theme-info-box {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .theme-info-box {
+  background-color: rgba(30, 64, 175, 0.2);
+  color: #93c5fd;
+  border-color: rgba(30, 64, 175, 0.3);
+}
+
+/* Notification用テーマクラス */
+.theme-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #eab308;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .theme-warning {
+  background-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.5);
 }

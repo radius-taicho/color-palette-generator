@@ -43,19 +43,16 @@ export default function Header({
   };
 
   return (
-    <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+    <header className="theme-header border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="flex items-center justify-between h-16 lg:h-20 xl:h-24 px-8 sm:px-10 lg:px-16 xl:px-20">
         <div className="flex items-center space-x-3 lg:space-x-6">
-          <div className={`p-3 lg:p-4 xl:p-5 bg-gradient-to-r ${themeInfo[paletteTheme].color} rounded-lg lg:rounded-xl`}>
-            <Palette className="h-8 w-8 lg:h-10 lg:w-10 xl:h-12 xl:w-12 text-white" />
+          <div className={`p-2 lg:p-3 xl:p-4 bg-gradient-to-r ${themeInfo[paletteTheme].color} rounded-lg lg:rounded-xl`}>
+            <Palette className="h-6 w-6 lg:h-8 lg:w-8 xl:h-10 xl:w-10 text-white" />
           </div>
           <div>
-            <h1 className="text-xl lg:text-2xl xl:text-3xl font-bold text-gray-800 dark:text-white">
+            <h1 className="text-xl lg:text-2xl xl:text-3xl font-bold theme-text-primary">
               Color Palette Generator
             </h1>
-            <p className="text-sm lg:text-base xl:text-lg text-gray-600 dark:text-gray-400">
-              画像から美しいカラーパレットを生成
-            </p>
           </div>
         </div>
         
@@ -70,9 +67,9 @@ export default function Header({
                   key={theme}
                   onClick={() => onThemeChange(theme)}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-md font-medium transition-all duration-200 text-sm cursor-pointer ${
-                    paletteTheme === theme
-                      ? `bg-gradient-to-r ${info.color} text-white shadow-md`
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                  paletteTheme === theme
+                  ? `bg-gradient-to-r ${info.color} text-white shadow-md`
+                  : 'theme-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                   title={info.description}
                 >
@@ -87,7 +84,7 @@ export default function Header({
           <div className="relative">
             <button
               onClick={onToggleSettings}
-              className="p-3 lg:p-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
+              className="p-3 lg:p-4 theme-text-secondary hover:theme-text-primary transition-colors cursor-pointer"
               title="設定"
             >
               <Settings className="h-6 w-6 lg:h-8 lg:w-8 xl:h-10 xl:w-10" />
