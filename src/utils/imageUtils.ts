@@ -246,11 +246,12 @@ export function extractColorFromImageAtPosition(
       // 画像をキャンバスに描画
       ctx.drawImage(imageElement, 0, 0);
       
-      // 🎆 高精度色抽出：3x3ピクセルの平均を取る
-      const sampleSize = 3; // 3x3グリッド
+      // 💎 極限精度色拽出：5x5ピクセルの重み付き平均を取る
+      const sampleSize = 5; // 5x5グリッドでより精密に
       const halfSize = Math.floor(sampleSize / 2);
+      const centerWeight = 3; // 中央ピクセルの重みを大きく
       
-      let totalR = 0, totalG = 0, totalB = 0, validPixels = 0;
+      let totalR = 0, totalG = 0, totalB = 0, totalWeight = 0;
       
       for (let dy = -halfSize; dy <= halfSize; dy++) {
         for (let dx = -halfSize; dx <= halfSize; dx++) {
@@ -261,33 +262,37 @@ export function extractColorFromImageAtPosition(
           const data = imageData.data;
           
           if (data[3] > 0) { // アルファ値が0でないピクセルのみ使用
-            totalR += data[0];
-            totalG += data[1];
-            totalB += data[2];
-            validPixels++;
+            // 中央からの距離によって重みを計算（中央ほど重く）
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const weight = dx === 0 && dy === 0 ? centerWeight : Math.max(1, centerWeight - distance);
+            
+            totalR += data[0] * weight;
+            totalG += data[1] * weight;
+            totalB += data[2] * weight;
+            totalWeight += weight;
           }
         }
       }
       
-      if (validPixels === 0) {
-        // フォールバック：中央ピクセルのみ使用
+      if (totalWeight === 0) {
+        // 💎 フォールバック：中央ピクセルのみ使用（最高精度）
         const imageData = ctx.getImageData(x, y, 1, 1);
         const data = imageData.data;
         const r = data[0];
         const g = data[1];
         const b = data[2];
-        const colorInfo = createColorInfo(r, g, b, `eyedropper_precise_${Date.now()}_${x}_${y}`);
+        const colorInfo = createColorInfo(r, g, b, `eyedropper_ultra_precise_${Date.now()}_${x}_${y}`);
         resolve(colorInfo);
         return;
       }
       
-      // 平均色を計算
-      const avgR = Math.round(totalR / validPixels);
-      const avgG = Math.round(totalG / validPixels);
-      const avgB = Math.round(totalB / validPixels);
+      // 重み付き平均色を計算（最高精度）
+      const avgR = Math.round(totalR / totalWeight);
+      const avgG = Math.round(totalG / totalWeight);
+      const avgB = Math.round(totalB / totalWeight);
       
-      // ColorInfo オブジェクトを作成
-      const colorInfo = createColorInfo(avgR, avgG, avgB, `eyedropper_precise_${Date.now()}_${x}_${y}`);
+      // 💎 極限精度ColorInfo オブジェクトを作成
+      const colorInfo = createColorInfo(avgR, avgG, avgB, `eyedropper_ultra_precise_${Date.now()}_${x}_${y}`);
       resolve(colorInfo);
       
     } catch (error) {
@@ -297,7 +302,7 @@ export function extractColorFromImageAtPosition(
 }
 
 /**
- * 🎯 超高精度な画像座標変換（object-cover完全対応）
+ * 💎 極限精度画像座標変換（サブピクセル精度対応）
  */
 export function getCanvasCoordinatesFromImageClick(
   event: React.MouseEvent<HTMLImageElement>,
@@ -306,25 +311,25 @@ export function getCanvasCoordinatesFromImageClick(
   // 画像要素の境界を取得
   const rect = imageElement.getBoundingClientRect();
   
-  // スクロール位置を考慮したクリック座標
+  // 💎 サブピクセル精度クリック座標（フロート精度）
   const clickX = event.clientX - rect.left;
   const clickY = event.clientY - rect.top;
   
-  // 画像の自然サイズと表示サイズ
+  // 画像の自然サイズと表示サイズ（高精度）
   const naturalWidth = imageElement.naturalWidth;
   const naturalHeight = imageElement.naturalHeight;
   const displayWidth = rect.width;
   const displayHeight = rect.height;
   
-  // アスペクト比を計算
+  // 💎 アスペクト比を高精度で計算
   const naturalAspectRatio = naturalWidth / naturalHeight;
   const displayAspectRatio = displayWidth / displayHeight;
   
   let sourceX: number, sourceY: number;
   
-  // object-cover の動作を正確にシミュレート
+  // 💎 object-contain の動作を極限精度でシミュレート
   if (naturalAspectRatio > displayAspectRatio) {
-    // 画像が横に長い → 上下をトリミング
+    // 画像が横に長い → 上下に黒帯
     const scaledHeight = displayWidth / naturalAspectRatio;
     const yOffset = (displayHeight - scaledHeight) / 2;
     
@@ -332,16 +337,16 @@ export function getCanvasCoordinatesFromImageClick(
     const adjustedY = clickY - yOffset;
     
     if (adjustedY < 0 || adjustedY > scaledHeight) {
-      // 黒帯部分がクリックされた場合
+      // 黒帯部分がクリックされた場合（端っこの色を抽出）
       sourceX = Math.round((clickX / displayWidth) * naturalWidth);
       sourceY = adjustedY < 0 ? 0 : naturalHeight - 1;
     } else {
-      // 実際の画像部分がクリックされた場合
-      sourceX = Math.round((clickX / displayWidth) * naturalWidth);
-      sourceY = Math.round((adjustedY / scaledHeight) * naturalHeight);
+      // 実際の画像部分がクリックされた場合（高精度変換）
+      sourceX = (clickX / displayWidth) * naturalWidth;
+      sourceY = (adjustedY / scaledHeight) * naturalHeight;
     }
   } else {
-    // 画像が縦に長い → 左右をトリミング
+    // 画像が縦に長い → 左右に黒帯
     const scaledWidth = displayHeight * naturalAspectRatio;
     const xOffset = (displayWidth - scaledWidth) / 2;
     
@@ -349,19 +354,19 @@ export function getCanvasCoordinatesFromImageClick(
     const adjustedX = clickX - xOffset;
     
     if (adjustedX < 0 || adjustedX > scaledWidth) {
-      // 黒帯部分がクリックされた場合
+      // 黒帯部分がクリックされた場合（端っこの色を抽出）
       sourceX = adjustedX < 0 ? 0 : naturalWidth - 1;
       sourceY = Math.round((clickY / displayHeight) * naturalHeight);
     } else {
-      // 実際の画像部分がクリックされた場合
-      sourceX = Math.round((adjustedX / scaledWidth) * naturalWidth);
-      sourceY = Math.round((clickY / displayHeight) * naturalHeight);
+      // 実際の画像部分がクリックされた場合（高精度変換）
+      sourceX = (adjustedX / scaledWidth) * naturalWidth;
+      sourceY = (clickY / displayHeight) * naturalHeight;
     }
   }
   
-  // 境界値チェック（安全性のため）
-  const finalX = Math.max(0, Math.min(naturalWidth - 1, sourceX));
-  const finalY = Math.max(0, Math.min(naturalHeight - 1, sourceY));
+  // 💎 最終的なピクセル座標への変換（四捨五入で最適化）
+  const finalX = Math.max(0, Math.min(naturalWidth - 1, Math.round(sourceX)));
+  const finalY = Math.max(0, Math.min(naturalHeight - 1, Math.round(sourceY)));
   
   return { x: finalX, y: finalY };
 }

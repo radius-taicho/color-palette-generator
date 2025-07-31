@@ -60,6 +60,8 @@ export interface PaletteDisplayProps {
 export interface ColorMixerProps {
   colors: ColorInfo[];
   onColorMixed: (mixedColor: MixedColor) => void;
+  onColorExtracted?: (extractedColor: ColorInfo) => void; // ドラッグ&ドロップで抽出色一覧に追加
+  onColorRemoved?: (removedColor: ColorInfo) => void; // 抽出色を削除
   theme?: PaletteTheme;
   extractedColors?: ColorInfo[]; // 🎨 スポイトで抽出した色
   // アクションボタン用のprops

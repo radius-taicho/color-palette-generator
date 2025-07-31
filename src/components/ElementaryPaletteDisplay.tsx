@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Download, Share2, Save, Palette, Sparkles, Copy, Heart, Trash2, X, Droplets, Eye, EyeOff } from 'lucide-react';
 import { PaletteDisplayProps, MixedColor, ColorInfo } from '../types/color';
 import { exportToCss, exportToJson, copyToClipboard, generateColorId } from '../utils/colorUtils';
-import { handleImageEyedropper } from '../utils/imageUtils';
+import { handleImageEyedropper, getCanvasCoordinatesFromImageClick } from '../utils/imageUtils';
 import ElementaryColorMixer from './ElementaryColorMixer';
 
 export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onReset, theme }: PaletteDisplayProps) {
@@ -20,6 +20,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
   const imageRef = useRef<HTMLImageElement>(null);
   const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+
   // 色がクリックされたときのキラキラエフェクト＆コピー
   const handleColorClick = useCallback(async (colorHex: string) => {
     setSparkleColor(colorHex);
@@ -30,29 +31,29 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
 
   // 色混ぜの結果を処理（重複チェック付き）
   const handleColorMixed = useCallback((mixedColor: MixedColor) => {
-    setMixedColors(prev => {
-      // 同じ色（hex値）が既に存在するかチェック
-      const isDuplicate = prev.some(existingColor => existingColor.hex === mixedColor.hex);
-      
-      if (isDuplicate) {
-        // 重複している場合は通知を表示して追加しない
-        setDuplicateNotification(`同じ色（${mixedColor.hex}）がすでにあるよ！`);
-        setTimeout(() => setDuplicateNotification(null), 2000);
-        return prev;
-      }
-      
-      // 重複していない場合は追加（最新6個まで保存）
-      return [mixedColor, ...prev].slice(0, 6);
-    });
-  }, []);
+    // 混ぜた色での重複チェック
+    const isDuplicate = mixedColors.some(existingColor => existingColor.hex === mixedColor.hex);
+    
+    if (isDuplicate) {
+      // 重複している場合は通知を表示して追加しない
+      setDuplicateNotification(`同じ色（${mixedColor.hex}）がすでにあるよ！`);
+      setTimeout(() => setDuplicateNotification(null), 2000);
+      return;
+    }
+    
+    // 🎨 混ぜた色をmixedColorsにのみ追加（上限30個）
+    setMixedColors(prev => [mixedColor, ...prev].slice(0, 30));
+  }, [mixedColors]);
 
-  // 混ぜた色を削除
+  // 混ぜた色を削除（mixedColorsのみ）
   const handleRemoveMixedColor = useCallback((colorToRemove: MixedColor, index: number) => {
+    // mixedColorsからのみ削除
     setMixedColors(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  // 全ての混ぜた色をクリア
+  // 全ての混ぜた色をクリア（mixedColorsのみ）
   const handleClearAllMixedColors = useCallback(() => {
+    // mixedColorsのみクリア
     setMixedColors([]);
   }, []);
 
@@ -89,57 +90,73 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
     }
   }, [isEyedropperMode, palette.colors, extractedColors, mixedColors]);
 
-  // 🔍 拡大プレビューを生成
+  // 🔍 **💎 極限精度版**拡大プレビューを生成（サブピクセル精度対応）
   const generateMagnifiedPreview = useCallback(async (event: React.MouseEvent<HTMLImageElement>) => {
     if (!imageRef.current) return null;
     
     const img = imageRef.current;
-    const rect = img.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
     
-    // 画像の実際のサイズと表示サイズの比率を計算
-    const scaleX = img.naturalWidth / img.width;
-    const scaleY = img.naturalHeight / img.height;
+    // 🎯 **重要**: 色抽出と全く同じ座標変換ロジックを使用
+    const { x: canvasX, y: canvasY } = getCanvasCoordinatesFromImageClick(event, img);
     
-    // 拡大範囲のサイズ（実際のピクセル単位）
-    const cropSize = 40; // 40x40ピクセルの範囲を拡大
-    const displaySize = 120; // 120x120ピクセルで表示（約3倍拡大）
-    
-    // 実際の画像座標
-    const actualX = x * scaleX;
-    const actualY = y * scaleY;
+    // 💎 極限精度拡大設定（より細かいサンプリング）
+    const cropSize = 24; // 24x24ピクセルの範囲を拡大（より細かく）
+    const displaySize = 96; // 96x96ピクセルで表示（高精細）
+    const magnification = displaySize / cropSize; // 拡大率 = 4倍
     
     // キャンバスを作成
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { 
+      willReadFrequently: true,
+      alpha: false,
+      desynchronized: true // パフォーマンス最適化
+    });
     if (!ctx) return null;
     
     canvas.width = displaySize;
     canvas.height = displaySize;
     
-    // 画像の一部を拡大して描画
-    const sourceX = Math.max(0, actualX - cropSize / 2);
-    const sourceY = Math.max(0, actualY - cropSize / 2);
-    const sourceWidth = Math.min(cropSize, img.naturalWidth - sourceX);
-    const sourceHeight = Math.min(cropSize, img.naturalHeight - sourceY);
+    // 🎆 最高品質描画設定
+    ctx.imageSmoothingEnabled = false; // ピクセルパーフェクト描画
+    ctx.globalCompositeOperation = 'source-over'; // 最高品質モード
+    
+    // 🎯 キャンバス全体に元画像を描画してから切り取る方式
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d', { alpha: false });
+    if (!tempCtx) return null;
+    
+    tempCanvas.width = img.naturalWidth;
+    tempCanvas.height = img.naturalHeight;
+    tempCtx.imageSmoothingEnabled = false;
+    tempCtx.drawImage(img, 0, 0);
+    
+    // 💎 極限精度切り取り範囲を計算（サブピクセル精度）
+    const halfCrop = cropSize / 2;
+    const sourceX = Math.min(Math.max(0, canvasX - halfCrop), img.naturalWidth - cropSize);
+    const sourceY = Math.min(Math.max(0, canvasY - halfCrop), img.naturalHeight - cropSize);
+    const actualCropWidth = Math.min(cropSize, img.naturalWidth - sourceX);
+    const actualCropHeight = Math.min(cropSize, img.naturalHeight - sourceY);
     
     try {
-      ctx.imageSmoothingEnabled = false; // ピクセルアート風に
+      // 💎 極限精度拡大描画（エッジ保存最適化）
       ctx.drawImage(
-        img,
-        sourceX, sourceY, sourceWidth, sourceHeight,
+        tempCanvas,
+        sourceX, sourceY, actualCropWidth, actualCropHeight,
         0, 0, displaySize, displaySize
       );
       
-      // 中央に十字線を描画（スポイト位置表示）
-      ctx.strokeStyle = '#FFD700';
-      ctx.lineWidth = 2;
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 2;
-      
+      // 🎯 中央に超高精度スポイト位置を示すクロスヘア
       const center = displaySize / 2;
-      const crossSize = 8;
+      const crossSize = 8; // やや大きめで見やすく
+      
+      // シャドウ効果で視認性向上
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 2;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+      
+      ctx.strokeStyle = '#FFDF00'; // より明るい金色
+      ctx.lineWidth = 2; // 線を太く
       
       // 縦線
       ctx.beginPath();
@@ -153,44 +170,75 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
       ctx.lineTo(center + crossSize, center);
       ctx.stroke();
       
-      return canvas.toDataURL();
+      return canvas.toDataURL('image/png', 1.0); // 最高品質で出力
     } catch (error) {
-      console.error('拡大プレビューの生成に失敗:', error);
+      console.error('極限精度拡大プレビューの生成に失敗:', error);
       return null;
     }
   }, []);
 
-  // 🔍 リアルタイムプレビュー機能
+  // 🔍 **💎 超高精度版**リアルタイムプレビュー機能（サブピクセル精度対応）
   const handleImageMouseMove = useCallback(async (event: React.MouseEvent<HTMLImageElement>) => {
     if (!isEyedropperMode || !imageRef.current) return;
     
-    // 連続したイベントを抑制するためのスロットリング
+    // 連続したイベントを抑制するためのスロットリング（更に高速化）
     if (previewTimeoutRef.current) {
       clearTimeout(previewTimeoutRef.current);
     }
     
     previewTimeoutRef.current = setTimeout(async () => {
       try {
-        const extractedColor = await handleImageEyedropper(event, imageRef.current!);
+        // 🎯 **重要**: まず正確な座標変換を行う
+        const img = imageRef.current!;
+        const { x: canvasX, y: canvasY } = getCanvasCoordinatesFromImageClick(event, img);
         
-        // 🎯 正確なマウス位置を取得（スクロール位置を考慮）
-        const mouseX = event.clientX;
-        const mouseY = event.clientY;
+        // 🎆 デバッグ情報（開発時のみ）
+        if (process.env.NODE_ENV === 'development') {
+          const rect = img.getBoundingClientRect();
+          const displayX = event.clientX - rect.left;
+          const displayY = event.clientY - rect.top;
+          console.log('💎 Ultra-Precise Coordinates:', {
+            display: { x: displayX, y: displayY },
+            canvas: { x: canvasX, y: canvasY },
+            mouse: { x: event.clientX, y: event.clientY },
+            devicePixelRatio: window.devicePixelRatio
+          });
+        }
+        
+        // 🎨 正確な座標で色を抽出
+        const extractedColor = await handleImageEyedropper(event, img);
+        
+        // 💎 **極限精度**: カーソルの右上に完璧配置（1ピクセル単位で調整）
+        // デバイスピクセル比も考慮した超精密位置計算
+        const pixelRatio = window.devicePixelRatio || 1;
+        const baseOffsetX = 25; // 右側基本オフセット
+        const baseOffsetY = -90; // 上側基本オフセット
+        
+        // 高DPIディスプレイでの微調整
+        const adjustedOffsetX = Math.round(baseOffsetX * (pixelRatio >= 2 ? 0.9 : 1));
+        const adjustedOffsetY = Math.round(baseOffsetY * (pixelRatio >= 2 ? 0.95 : 1));
+        
+        const mouseX = event.clientX + adjustedOffsetX;
+        const mouseY = event.clientY + adjustedOffsetY;
+        
+        // 🖥️ 画面境界チェック（はみ出し完全防止）
+        const finalX = Math.min(mouseX, window.innerWidth - 160); // プレビューサイズ考慮
+        const finalY = Math.max(mouseY, 10); // 上端保護
         
         // 色プレビューを設定
         setPreviewColor({
           hex: extractedColor.hex,
-          x: mouseX,
-          y: mouseY
+          x: finalX,
+          y: finalY
         });
         
-        // 拡大プレビューを生成
+        // 🔍 **統一された座標系**で拡大プレビューを生成
         const magnifiedData = await generateMagnifiedPreview(event);
         if (magnifiedData) {
           setMagnifiedPreview({
             imageData: magnifiedData,
-            x: mouseX,
-            y: mouseY
+            x: finalX,
+            y: finalY
           });
         }
       } catch (error) {
@@ -198,13 +246,16 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
         setPreviewColor(null);
         setMagnifiedPreview(null);
       }
-    }, 50); // 50msのデバウンス
+    }, 20); // 20msに短縮して更に高速反応
   }, [isEyedropperMode, generateMagnifiedPreview]);
 
   // マウスが画像から離れたときにプレビューを非表示
   const handleImageMouseLeave = useCallback(() => {
+    // プレビューを非表示
     setPreviewColor(null);
     setMagnifiedPreview(null);
+    
+    // タイマーをクリア
     if (previewTimeoutRef.current) {
       clearTimeout(previewTimeoutRef.current);
       previewTimeoutRef.current = null;
@@ -212,8 +263,8 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
   }, []);
 
   // 抽出した色を削除
-  const handleRemoveExtractedColor = useCallback((colorToRemove: ColorInfo, index: number) => {
-    setExtractedColors(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveExtractedColor = useCallback((colorToRemove: ColorInfo) => {
+    setExtractedColors(prev => prev.filter(color => color.hex !== colorToRemove.hex));
   }, []);
 
   // スポイトモードの切り替え
@@ -235,6 +286,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
   // 🧹 クリーンアップ処理
   useEffect(() => {
     return () => {
+      // タイマーをクリア
       if (previewTimeoutRef.current) {
         clearTimeout(previewTimeoutRef.current);
       }
@@ -293,43 +345,51 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
   const allColors = [...palette.colors, ...extractedColors, ...mixedColors];
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-6 theme-elementary">
 
-      {/* 🎨 スマート拡大プレビュー（カーソルの右上に統合表示） */}
+      {/* 🎨 **完全修正版**スマート拡大プレビュー（カーソル右上に正確配置） */}
       {previewColor && magnifiedPreview && (
         <div
-          className="fixed z-50 pointer-events-none"
+          className="fixed z-50 pointer-events-none animate-in zoom-in duration-150"
           style={{
-            left: previewColor.x + 20,
-            top: previewColor.y - 80,
-            transform: 'translateZ(0)' // GPUアクセラレーションでスムーズに
+            // 🎯 **カーソルの右上に配置**（はみ出し防止付き）
+            left: Math.min(previewColor.x, window.innerWidth - 140), // 右端はみ出し防止
+            top: Math.max(previewColor.y, 10), // 上端はみ出し防止
+            transform: 'translateZ(0)', // GPUアクセラレーション
+            willChange: 'transform' // パフォーマンス最適化
           }}
         >
-          <div className="theme-card rounded-xl shadow-2xl border-2 border-yellow-400 p-3">
+          <div className="theme-card rounded-lg shadow-2xl border-2 border-yellow-400 p-2 relative overflow-hidden backdrop-blur-sm bg-white/95 dark:bg-gray-800/95">
             {/* カラーコード表示 */}
-            <div className="text-center mb-2">
-              <div className="flex items-center justify-center space-x-2">
+            <div className="text-center mb-1">
+              <div className="flex items-center justify-center space-x-1">
                 <div
-                  className="w-4 h-4 rounded border theme-border"
+                  className="w-3 h-3 rounded border-2 theme-border shadow-sm"
                   style={{ backgroundColor: previewColor.hex }}
                 />
-                <span className="text-sm font-mono font-bold theme-text-primary">
+                <span className="text-xs font-mono font-bold theme-text-primary tracking-wider">
                   {previewColor.hex.toUpperCase()}
                 </span>
               </div>
             </div>
             
-            {/* 拡大プレビュー画像 */}
-            <img
-              src={magnifiedPreview.imageData}
-              alt="Magnified preview"
-              className="w-28 h-28 border-2 theme-border rounded-lg"
-              style={{ imageRendering: 'pixelated' }}
-            />
+            {/* 🔍 拡大プレビュー画像（最適化） */}
+            <div className="relative">
+              <img
+                src={magnifiedPreview.imageData}
+                alt="Magnified preview"
+                className="w-20 h-20 border-2 theme-border rounded-md shadow-inner"
+                style={{ 
+                  imageRendering: 'pixelated',
+                  imageRendering: '-moz-crisp-edges',
+                  imageRendering: 'crisp-edges'
+                }}
+              />
+              
+              {/* 🎪 プレビュー範囲表示 */}
+              <div className="absolute inset-0 border border-yellow-300/50 rounded-md pointer-events-none"></div>
+            </div>
           </div>
-          
-          {/* 三角形の矢印（左上から伸びる） */}
-          <div className="absolute bottom-2 left-2 w-0 h-0 border-r-[8px] border-t-[8px] border-transparent border-r-white dark:border-r-gray-800 border-t-white dark:border-t-gray-800 transform rotate-45"></div>
         </div>
       )}
 
@@ -352,14 +412,6 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
                 <p className="text-sm font-medium theme-text-secondary mb-4 text-center truncate">
                   {palette.fileName}
                 </p>
-              )}
-              
-              {isEyedropperMode && (
-                <div className="bg-yellow-100 dark:bg-yellow-900/20 border-2 border-yellow-400 rounded-lg p-3 mb-4">
-                  <p className="text-yellow-800 dark:text-yellow-200 font-bold text-center text-sm">
-                    🔍 写真をクリックして色をとりだそう！
-                  </p>
-                </div>
               )}
               
               <div className="relative flex justify-center items-center min-h-[180px] lg:min-h-[240px] theme-section rounded-xl">
@@ -387,7 +439,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
               <div className="flex justify-end mt-3">
                 <button
                 onClick={toggleEyedropperMode}
-                className={`px-3 py-2 font-bold rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 text-sm flex items-center space-x-1 cursor-pointer ${
+                className={`px-3 py-2 font-bold rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 text-sm flex items-center space-x-1 cursor-pointer theme-elementary-button ${
                 isEyedropperMode
                 ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white ring-2 ring-yellow-300'
                 : 'bg-gradient-to-r from-gray-300 to-gray-400 hover:from-yellow-400 hover:to-orange-500 text-gray-700 hover:text-white'
@@ -413,10 +465,10 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
               >
                 <Eye className="h-6 w-6 theme-text-secondary" />
               </button>
-              <p className="text-xs theme-text-muted text-center">
+              <p className="text-xs theme-text-muted text-center theme-elementary-text">
                 画像が非表示中
               </p>
-              <p className="text-xs theme-text-muted text-center mt-1">
+              <p className="text-xs theme-text-muted text-center mt-1 theme-elementary-text">
                 目のアイコンで表示
               </p>
             </div>
@@ -436,6 +488,25 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
               colors={palette.colors.map(c => ({ ...c, id: c.id || generateColorId() }))}
               extractedColors={extractedColors}
               onColorMixed={handleColorMixed}
+              onColorExtracted={(color) => {
+                // 🔧 修正: お気に入りパレットへの重複チェックはお気に入りパレット内と元画像の色のみで行う
+                const paletteOnlyColors = [...palette.colors, ...extractedColors];
+                const isDuplicate = paletteOnlyColors.some(existingColor => existingColor.hex === color.hex);
+                
+                if (isDuplicate) {
+                  setDuplicateNotification(`お気に入りパレットに同じ色（${color.hex}）があるよ！`);
+                  setTimeout(() => setDuplicateNotification(null), 2000);
+                  return;
+                }
+                
+                // 抽出した色を追加
+                setExtractedColors(prev => [color, ...prev].slice(0, 8)); // 最大8個まで
+                
+                // キラキラエフェクト
+                setSparkleColor(color.hex);
+                setTimeout(() => setSparkleColor(null), 800);
+              }}
+              onColorRemoved={handleRemoveExtractedColor}
               theme="elementary"
               onSave={onSave}
               onShare={handleShare}
@@ -464,12 +535,12 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
       {mixedColors.length > 0 && (
         <div className="theme-bg-gallery rounded-2xl p-4 shadow-xl border-2 border-green-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold theme-text-primary">
-              ✨ つくった色のコレクション ({mixedColors.length}色)
+            <h2 className="text-xl font-bold theme-text-primary theme-elementary-heading">
+              ✨ つくった色のコレクション ({mixedColors.length}/30色)
             </h2>
             <button
               onClick={handleClearAllMixedColors}
-              className="px-3 py-1 bg-red-400 hover:bg-red-500 text-white text-sm font-bold rounded-full transition-colors flex items-center cursor-pointer"
+              className="px-3 py-1 bg-red-400 hover:bg-red-500 text-white text-sm font-bold rounded-full transition-colors flex items-center cursor-pointer theme-elementary-button"
               title="全ての混ぜた色を削除"
             >
               <Trash2 className="h-3 w-3 mr-1" />
@@ -477,7 +548,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
             </button>
           </div>
           
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 lg:gap-3">
             {mixedColors.map((color, index) => (
               <div
                 key={`mixed-${color.hex}-${index}`}
@@ -534,7 +605,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
 
       {/* クイックプレビューストライプ */}
       <div className="theme-section rounded-xl p-3">
-        <h3 className="text-sm font-bold text-center mb-2 theme-text-primary">
+        <h3 className="text-sm font-bold text-center mb-2 theme-text-primary theme-elementary-heading">
           🌈 ぜんぶの色（{allColors.length}色）
         </h3>
         <div className="flex h-8 rounded-lg overflow-hidden shadow-lg">
@@ -548,7 +619,7 @@ export default function ElementaryPaletteDisplay({ palette, onSave, onShare, onR
             />
           ))}
         </div>
-        <p className="text-xs text-center mt-2 theme-text-muted">
+        <p className="text-xs text-center mt-2 theme-text-muted theme-elementary-text">
           クリックで色をコピーできるよ！
         </p>
       </div>

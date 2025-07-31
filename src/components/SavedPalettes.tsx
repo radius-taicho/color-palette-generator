@@ -1,20 +1,23 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { ColorPalette } from '../types/color';
+import React from "react";
+import { ColorPalette } from "../types/color";
 
 interface SavedPalettesProps {
   savedPalettes: ColorPalette[];
   onPaletteSelect: (palette: ColorPalette) => void;
 }
 
-export default function SavedPalettes({ savedPalettes, onPaletteSelect }: SavedPalettesProps) {
+export default function SavedPalettes({
+  savedPalettes,
+  onPaletteSelect,
+}: SavedPalettesProps) {
   if (savedPalettes.length === 0) {
     return null;
   }
 
   return (
-    <div className="mt-12">
+    <div className="mt-12 theme-elementary-text">
       <h3 className="text-xl font-semibold theme-text-primary mb-6">
         📚 保存済みパレット
       </h3>
@@ -38,7 +41,7 @@ export default function SavedPalettes({ savedPalettes, onPaletteSelect }: SavedP
               ))}
             </div>
             <p className="text-xs theme-text-muted mt-2">
-              {new Date(palette.createdAt).toLocaleDateString('ja-JP')}
+              {new Date(palette.createdAt).toLocaleDateString("ja-JP")}
             </p>
           </div>
         ))}

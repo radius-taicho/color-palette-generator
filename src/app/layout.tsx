@@ -1,6 +1,14 @@
 import { Metadata } from 'next';
+import { Inter, M_PLUS_Rounded_1c } from 'next/font/google';
 import './globals.css';
 import ThemeInitializer from './ThemeInitializer';
+
+const inter = Inter({ subsets: ['latin'] });
+const mPlusRounded = M_PLUS_Rounded_1c({ 
+  subsets: ['latin'], 
+  weight: ['100', '300', '400', '500', '700', '800', '900'],
+  variable: '--font-mplus-rounded'
+});
 
 export const metadata: Metadata = {
   title: 'Color Palette Generator - 画像から美しいカラーパレットを生成',
@@ -38,7 +46,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#3b82f6" />
       </head>
-      <body className="antialiased">
+      <body className={`antialiased ${inter.className} ${mPlusRounded.variable}`}>
         <ThemeInitializer />
         {children}
       </body>

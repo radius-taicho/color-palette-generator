@@ -186,7 +186,7 @@ export default function ColorPaletteGenerator({
       />
 
       {/* ヘッダーとメインコンテンツの間の隙間 */}
-      <div className="h-4 lg:h-8"></div>
+      <div className="h-4 lg:h-12"></div>
 
       {/* メインコンテンツ */}
       <main className="w-full px-8 sm:px-10 lg:px-16 xl:px-20">
@@ -212,10 +212,20 @@ export default function ColorPaletteGenerator({
           <div className="space-y-8">
             {/* 画像アップロード */}
             <div className="text-center">
-              <h2 className="text-2xl lg:text-3xl xl:text-4xl font-bold theme-text-primary mb-4 lg:mb-6">
+              <h2
+                className={`text-2xl lg:text-3xl xl:text-4xl font-bold theme-text-primary mb-4 lg:mb-6 ${
+                  paletteTheme === "elementary"
+                    ? "theme-elementary-heading"
+                    : ""
+                }`}
+              >
                 🎨 画像から色を抽出しましょう
               </h2>
-              <p className="text-base lg:text-lg xl:text-xl theme-text-secondary mb-6 lg:mb-8 max-w-4xl mx-auto">
+              <p
+                className={`text-base lg:text-lg xl:text-xl theme-text-secondary mb-6 lg:mb-8 max-w-4xl mx-auto ${
+                  paletteTheme === "elementary" ? "theme-elementary-text" : ""
+                }`}
+              >
                 お気に入りの画像をアップロードして、美しいカラーパレットを自動生成します
               </p>
 
